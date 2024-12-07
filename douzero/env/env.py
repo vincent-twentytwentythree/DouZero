@@ -218,7 +218,7 @@ def get_obs(infoset):
     else:
         raise ValueError('')
 
-def _get_one_hot_array(num_left_cards, max_num_cards):
+def _get_one_hot_array(num_left_cards, max_num_cards): # one_hot for num_left_cards
     """
     A utility function to obtain one-hot endoding
     """
@@ -227,7 +227,7 @@ def _get_one_hot_array(num_left_cards, max_num_cards):
 
     return one_hot
 
-def _cards2array(list_cards):
+def _cards2array(list_cards): # size of 54
     """
     A utility function that transforms the actions, i.e.,
     A list of integers into card matrix. Here we remove
@@ -371,6 +371,7 @@ def _get_obs_landlord(infoset):
           }
     return obs
 
+# MYWEN OBS Details
 def _get_obs_landlord_up(infoset):
     """
     Obttain the landlord_up features. See Table 5 in

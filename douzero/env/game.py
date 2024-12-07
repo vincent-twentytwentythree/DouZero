@@ -289,7 +289,7 @@ class GameEnv(object):
         self.bomb_num = 0
         self.last_pid = 'landlord'
 
-    def get_infoset(self):
+    def get_infoset(self): # updated, after env.step, so this will be the next env.step
         self.info_sets[
             self.acting_player_position].last_pid = self.last_pid
 

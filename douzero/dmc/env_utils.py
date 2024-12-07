@@ -6,6 +6,10 @@ the environment, we do it automatically.
 import numpy as np
 import torch 
 
+# @positon: landlord landlord_up landlord_down
+# @obs: from infoset
+# @x_no_action: all cards and actions info, no batch
+# @z: card_play_action_seq
 def _format_observation(obs, device):
     """
     A utility function to process observations and
@@ -33,6 +37,12 @@ class Environment:
         self.device = device
         self.episode_return = None
 
+    # @positon: landlord landlord_up landlord_down
+    # @obs: from infoset
+    # @@initial_done: whether game is down
+    # @@episode_return: reward
+    # @@x_no_action: all cards and actions info, no batch
+    # @@z: card_play_action_seq
     def initial(self):
         initial_position, initial_obs, x_no_action, z = _format_observation(self.env.reset(), self.device)
         initial_reward = torch.zeros(1, 1)

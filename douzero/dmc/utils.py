@@ -36,6 +36,7 @@ log.setLevel(logging.INFO)
 # and learner processes. They are shared tensors in GPU
 Buffers = typing.Dict[str, typing.List[torch.Tensor]]
 
+# Environment -> Env -> GameEnv
 def create_env(flags):
     return Env(flags.objective)
 
@@ -107,6 +108,27 @@ def create_buffers(flags, device_iterator):
             buffers[device][position] = _buffers
     return buffers
 
+
+# buffer
+# {
+#     device: {
+#         position: {
+#             "key": [ size of buffers
+#                 {
+#                     "1": value
+#                     "T": value
+#                 }
+#             ]
+#         }
+#     }
+# }
+
+# free_queue
+# {
+#     device: {
+#         position: queue size of num_buffers
+#     }
+# }
 def act(i, device, free_queue, full_queue, model, buffers, flags):
     """
     This function will run forever until we stop it. It will generate
@@ -121,6 +143,13 @@ def act(i, device, free_queue, full_queue, model, buffers, flags):
         env = create_env(flags)
         env = Environment(env, device)
 
+        # done_buf: label actions whether game is down for each position
+        # episode_return_buf: reward only when game down for each position
+        # target_buf: reward for each action for each position
+        # obs_x_no_action_buf = {p: [] for p in positions}
+        # obs_action_buf: action list for each position
+        # obs_z_buf = {p: [] for p in positions}
+        # size: total action number for each position
         done_buf = {p: [] for p in positions}
         episode_return_buf = {p: [] for p in positions}
         target_buf = {p: [] for p in positions}

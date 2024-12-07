@@ -1,19 +1,66 @@
 from copy import deepcopy
 from . import move_detector as md, move_selector as ms
 from .move_generator import MovesGener
+import json
 
-EnvCard2RealCard = {3: '3', 4: '4', 5: '5', 6: '6', 7: '7',
-                    8: '8', 9: '9', 10: '10', 11: 'J', 12: 'Q',
-                    13: 'K', 14: 'A', 17: '2', 20: 'X', 30: 'D'}
+RealCard2EnvCard = {
+                    # 幸运币
+                    'GAME_005': 1, 
 
-RealCard2EnvCard = {'3': 3, '4': 4, '5': 5, '6': 6, '7': 7,
-                    '8': 8, '9': 9, '10': 10, 'J': 11, 'Q': 12,
-                    'K': 13, 'A': 14, '2': 17, 'X': 20, 'D': 30}
+                    # 伊辛迪奥斯
+                    'VAC_321': 2, 
+                    # 奇利亚斯豪华版3000型
+                    'TOY_330t11': 3, 
 
-bombs = [[3, 3, 3, 3], [4, 4, 4, 4], [5, 5, 5, 5], [6, 6, 6, 6],
-         [7, 7, 7, 7], [8, 8, 8, 8], [9, 9, 9, 9], [10, 10, 10, 10],
-         [11, 11, 11, 11], [12, 12, 12, 12], [13, 13, 13, 13], [14, 14, 14, 14],
-         [17, 17, 17, 17], [20, 30]]
+                    # 织法者玛里苟斯
+                    'CS3_034': 4, 
+
+                    # 极紫外破坏者
+                    'GDB_901': 5, 
+                    # 三角测量
+                    'GDB_451': 6, 
+                    # 月石重拳手
+                    'GDB_435': 7,
+                    # 水宝宝鱼人
+                    'MIS_307t1': 8, 
+                    'MIS_307': 9,
+
+                    # 流彩巨岩
+                    'GDB_434': 10, 
+                    # 消融元素
+                    'VAC_328': 11, 
+                    # 立体书
+                    'TOY_508': 12,
+                    # 陨石风暴
+                    'GDB_445': 13,
+                    # 艾瑞达蛮兵
+                    'GDB_320': 14, 
+                    # 虚灵神谕者
+                    'GDB_310': 15,
+                    # 焦油泥浆怪
+                    'TOY_000': 16,
+                    # 立体书
+                    'TOY_508': 17,
+
+                    # 针岩图腾
+                    'DEEP_008': 20, 
+                    
+                    # 麦芽岩浆
+                    'VAC_323': 26,
+                    'VAC_323t': 27,
+                    'VAC_323t2': 28,
+
+
+                    }
+
+EnvCard2RealCard = {value: key for key, value in RealCard2EnvCard.items()}
+
+#
+HearthStone = {}
+# Open and load the JSON file
+with open("hearthstone.json", "rb") as file:
+    data = json.load(file)
+    HearthStone = {RealCard2EnvCard[value["cardId"]]: value for i, value in enumerate(data) if value["cardId"] in RealCard2EnvCard}
 
 class GameEnv(object):
 
@@ -52,6 +99,8 @@ class GameEnv(object):
 
         self.bomb_num = 0
         self.last_pid = 'landlord'
+        self.round = 1
+        self.scores = 0
 
     def card_play_init(self, card_play_data):
         self.info_sets['landlord'].player_hand_cards = \
@@ -63,42 +112,26 @@ class GameEnv(object):
         self.three_landlord_cards = card_play_data['three_landlord_cards']
         self.get_acting_player_position()
         self.game_infoset = self.get_infoset()
+        self.round = 1
+        self.score = 0
 
     def game_done(self):
-        if len(self.info_sets['landlord'].player_hand_cards) == 0 or \
-                len(self.info_sets['landlord_up'].player_hand_cards) == 0 or \
-                len(self.info_sets['landlord_down'].player_hand_cards) == 0:
+        if self.round >= 15:
             # if one of the three players discards his hand,
             # then game is over.
-            self.compute_player_utility()
             self.update_num_wins_scores()
-
             self.game_over = True
 
-    def compute_player_utility(self):
-
-        if len(self.info_sets['landlord'].player_hand_cards) == 0:
-            self.player_utility_dict = {'landlord': 2,
-                                        'farmer': -1}
-        else:
-            self.player_utility_dict = {'landlord': -2,
-                                        'farmer': 1}
-
     def update_num_wins_scores(self):
-        for pos, utility in self.player_utility_dict.items():
-            base_score = 2 if pos == 'landlord' else 1
-            if utility > 0:
-                self.num_wins[pos] += 1
-                self.winner = pos
-                self.num_scores[pos] += base_score * (2 ** self.bomb_num)
-            else:
-                self.num_scores[pos] -= base_score * (2 ** self.bomb_num)
+        self.num_scores['landlord'] = self.scores
+        self.num_scores['landlord_up'] = 0
+        self.num_scores['landlord_down'] = 0
 
     def get_winner(self):
-        return self.winner
+        return "landlord"
 
     def get_bomb_num(self):
-        return self.bomb_num
+        return 0
 
     def step(self):
         action = self.players[self.acting_player_position].act(
@@ -108,9 +141,6 @@ class GameEnv(object):
         if len(action) > 0:
             self.last_pid = self.acting_player_position
 
-        if action in bombs:
-            self.bomb_num += 1
-
         self.last_move_dict[
             self.acting_player_position] = action.copy()
 
@@ -119,21 +149,16 @@ class GameEnv(object):
 
         self.played_cards[self.acting_player_position] += action
 
-        if self.acting_player_position == 'landlord' and \
-                len(action) > 0 and \
-                len(self.three_landlord_cards) > 0:
-            for card in action:
-                if len(self.three_landlord_cards) > 0:
-                    if card in self.three_landlord_cards:
-                        self.three_landlord_cards.remove(card)
-                else:
-                    break
+        self.round += 1
+        self.score += ms.calculateScore(action, HearthStone)
 
         self.game_done()
         if not self.game_over:
             self.get_acting_player_position()
             self.game_infoset = self.get_infoset()
 
+
+    
     def get_last_move(self):
         last_move = []
         if len(self.card_play_action_seq) != 0:
@@ -152,19 +177,7 @@ class GameEnv(object):
         return last_two_moves
 
     def get_acting_player_position(self):
-        if self.acting_player_position is None:
-            self.acting_player_position = 'landlord'
-
-        else:
-            if self.acting_player_position == 'landlord':
-                self.acting_player_position = 'landlord_down'
-
-            elif self.acting_player_position == 'landlord_down':
-                self.acting_player_position = 'landlord_up'
-
-            else:
-                self.acting_player_position = 'landlord'
-
+        self.acting_player_position = 'landlord'
         return self.acting_player_position
 
     def update_acting_player_hand_cards(self, action):
@@ -178,84 +191,10 @@ class GameEnv(object):
         mg = MovesGener(
             self.info_sets[self.acting_player_position].player_hand_cards)
 
-        action_sequence = self.card_play_action_seq
+        all_moves = mg.gen_moves()
 
-        rival_move = []
-        if len(action_sequence) != 0:
-            if len(action_sequence[-1]) == 0:
-                rival_move = action_sequence[-2]
-            else:
-                rival_move = action_sequence[-1]
-
-        rival_type = md.get_move_type(rival_move)
-        rival_move_type = rival_type['type']
-        rival_move_len = rival_type.get('len', 1)
-        moves = list()
-
-        if rival_move_type == md.TYPE_0_PASS:
-            moves = mg.gen_moves()
-
-        elif rival_move_type == md.TYPE_1_SINGLE:
-            all_moves = mg.gen_type_1_single()
-            moves = ms.filter_type_1_single(all_moves, rival_move)
-
-        elif rival_move_type == md.TYPE_2_PAIR:
-            all_moves = mg.gen_type_2_pair()
-            moves = ms.filter_type_2_pair(all_moves, rival_move)
-
-        elif rival_move_type == md.TYPE_3_TRIPLE:
-            all_moves = mg.gen_type_3_triple()
-            moves = ms.filter_type_3_triple(all_moves, rival_move)
-
-        elif rival_move_type == md.TYPE_4_BOMB:
-            all_moves = mg.gen_type_4_bomb() + mg.gen_type_5_king_bomb()
-            moves = ms.filter_type_4_bomb(all_moves, rival_move)
-
-        elif rival_move_type == md.TYPE_5_KING_BOMB:
-            moves = []
-
-        elif rival_move_type == md.TYPE_6_3_1:
-            all_moves = mg.gen_type_6_3_1()
-            moves = ms.filter_type_6_3_1(all_moves, rival_move)
-
-        elif rival_move_type == md.TYPE_7_3_2:
-            all_moves = mg.gen_type_7_3_2()
-            moves = ms.filter_type_7_3_2(all_moves, rival_move)
-
-        elif rival_move_type == md.TYPE_8_SERIAL_SINGLE:
-            all_moves = mg.gen_type_8_serial_single(repeat_num=rival_move_len)
-            moves = ms.filter_type_8_serial_single(all_moves, rival_move)
-
-        elif rival_move_type == md.TYPE_9_SERIAL_PAIR:
-            all_moves = mg.gen_type_9_serial_pair(repeat_num=rival_move_len)
-            moves = ms.filter_type_9_serial_pair(all_moves, rival_move)
-
-        elif rival_move_type == md.TYPE_10_SERIAL_TRIPLE:
-            all_moves = mg.gen_type_10_serial_triple(repeat_num=rival_move_len)
-            moves = ms.filter_type_10_serial_triple(all_moves, rival_move)
-
-        elif rival_move_type == md.TYPE_11_SERIAL_3_1:
-            all_moves = mg.gen_type_11_serial_3_1(repeat_num=rival_move_len)
-            moves = ms.filter_type_11_serial_3_1(all_moves, rival_move)
-
-        elif rival_move_type == md.TYPE_12_SERIAL_3_2:
-            all_moves = mg.gen_type_12_serial_3_2(repeat_num=rival_move_len)
-            moves = ms.filter_type_12_serial_3_2(all_moves, rival_move)
-
-        elif rival_move_type == md.TYPE_13_4_2:
-            all_moves = mg.gen_type_13_4_2()
-            moves = ms.filter_type_13_4_2(all_moves, rival_move)
-
-        elif rival_move_type == md.TYPE_14_4_22:
-            all_moves = mg.gen_type_14_4_22()
-            moves = ms.filter_type_14_4_22(all_moves, rival_move)
-
-        if rival_move_type not in [md.TYPE_0_PASS,
-                                   md.TYPE_4_BOMB, md.TYPE_5_KING_BOMB]:
-            moves = moves + mg.gen_type_4_bomb() + mg.gen_type_5_king_bomb()
-
-        if len(rival_move) != 0:  # rival_move is not 'pass'
-            moves = moves + [[]]
+        moves = ms.filter_hearth_stone(all_moves, self.round, HearthStone)
+        moves = moves + [[]]
 
         for m in moves:
             m.sort()
@@ -286,8 +225,9 @@ class GameEnv(object):
                          'landlord_up': InfoSet('landlord_up'),
                          'landlord_down': InfoSet('landlord_down')}
 
-        self.bomb_num = 0
         self.last_pid = 'landlord'
+        self.round = 1
+        self.scores = 0
 
     def get_infoset(self): # updated, after env.step, so this will be the next env.step
         self.info_sets[

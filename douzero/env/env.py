@@ -3,20 +3,23 @@ import numpy as np
 
 from douzero.env.game import GameEnv
 
-Card2Column = {3: 0, 4: 1, 5: 2, 6: 3, 7: 4, 8: 5, 9: 6, 10: 7,
-               11: 8, 12: 9, 13: 10, 14: 11, 17: 12}
+Card2Column = {i: i for i in range(1, 17 + 1)}
+Card2Column[20] = 18
+Card2Column[26] = 19
+Card2Column[27] = 20
+Card2Column[28] = 21
 
-NumOnes2Array = {0: np.array([0, 0, 0, 0]),
-                 1: np.array([1, 0, 0, 0]),
-                 2: np.array([1, 1, 0, 0]),
-                 3: np.array([1, 1, 1, 0]),
-                 4: np.array([1, 1, 1, 1])}
+NumOnes2Array = {0: np.array([0, 0]),
+                 1: np.array([1, 0]),
+                 2: np.array([1, 1])}
 
 deck = []
-for i in range(3, 15):
+for i in range(5, 8 + 1):
     deck.extend([i for _ in range(4)])
-deck.extend([17 for _ in range(4)])
-deck.extend([20, 30])
+
+for i in range(10, 17 + 1):
+    deck.extend([i for _ in range(4)])
+deck.extend([2, 3, 4, 20, 26, 26])
 
 class Env:
     """

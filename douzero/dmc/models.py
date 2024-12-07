@@ -11,8 +11,8 @@ from torch import nn
 class LandlordLstmModel(nn.Module):
     def __init__(self):
         super().__init__()
-        self.lstm = nn.LSTM(162, 128, batch_first=True)
-        self.dense1 = nn.Linear(373 + 128, 512)
+        self.lstm = nn.LSTM(120, 128, batch_first=True)
+        self.dense1 = nn.Linear(40 * 4 + 128, 512)
         self.dense2 = nn.Linear(512, 512)
         self.dense3 = nn.Linear(512, 512)
         self.dense4 = nn.Linear(512, 512)
@@ -46,7 +46,7 @@ class LandlordLstmModel(nn.Module):
 class FarmerLstmModel(nn.Module):
     def __init__(self):
         super().__init__()
-        self.lstm = nn.LSTM(162, 128, batch_first=True)
+        self.lstm = nn.LSTM(120, 128, batch_first=True)
         self.dense1 = nn.Linear(484 + 128, 512)
         self.dense2 = nn.Linear(512, 512)
         self.dense3 = nn.Linear(512, 512)

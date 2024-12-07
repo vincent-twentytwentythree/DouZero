@@ -17,5 +17,5 @@ class MovesGener(object):
     def gen_moves(self):
         all_combinations = []
         for r in range(1, len(self.cards_list) + 1):
-            all_combinations.extend(combinations(self.cards_list, r))
+            all_combinations.extend([list(tup) for tup in combinations(self.cards_list, r)])
         return all_combinations

@@ -182,19 +182,19 @@ python3 evaluate.py
 ```
 以下为一些重要的超参数。
 *   `--landlord`: 扮演地主的智能体，可选值：random, rlcard或预训练模型的路径
-*   `--landlord_up`: 扮演地主上家的智能体，可选值：random, rlcard或预训练模型的路径
-*   `--landlord_down`: 扮演地主下家的智能体，可选值：random, rlcard或预训练模型的路径
+*   `--second_hand`: 扮演地主上家的智能体，可选值：random, rlcard或预训练模型的路径
+*   `--pk_dp`: 扮演地主下家的智能体，可选值：random, rlcard或预训练模型的路径
 *   `--eval_data`: 包含评估数据的pickle文件
 *   `--num_workers`: 用多少个进程进行模拟
 *   `--gpu_device`: 用哪个GPU设备进行模拟。默认用CPU
 
 例如，可以通过以下命令评估DouZero-ADP智能体作为地主对阵随机智能体
 ```
-python3 evaluate.py --landlord baselines/douzero_ADP/landlord.ckpt --landlord_up random --landlord_down random
+python3 evaluate.py --landlord baselines/douzero_ADP/landlord.ckpt --second_hand random --pk_dp random
 ```
 以下命令可以评估DouZero-ADP智能体作为农民对阵RLCard智能体
 ```
-python3 evaluate.py --landlord rlcard --landlord_up baselines/douzero_ADP/landlord_up.ckpt --landlord_down baselines/douzero_ADP/landlord_down.ckpt
+python3 evaluate.py --landlord rlcard --second_hand baselines/douzero_ADP/second_hand.ckpt --pk_dp baselines/douzero_ADP/pk_dp.ckpt
 ```
 默认情况下，我们的模型会每半小时保存在`douzero_checkpoints/douzero`路径下。我们提供了一个脚本帮助您定位最近一次保存检查点。运行
 ```

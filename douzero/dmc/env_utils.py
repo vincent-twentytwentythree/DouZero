@@ -6,7 +6,7 @@ the environment, we do it automatically.
 import numpy as np
 import torch 
 
-# @positon: landlord landlord_up landlord_down
+# @positon: landlord second_hand pk_dp
 # @obs: from infoset
 # @x_no_action: all cards and actions info, no batch
 # @z: card_play_action_seq
@@ -37,7 +37,7 @@ class Environment:
         self.device = device
         self.episode_return = None
 
-    # @positon: landlord landlord_up landlord_down
+    # @positon: landlord second_hand pk_dp
     # @obs: from infoset
     # @@initial_done: whether game is down
     # @@episode_return: reward
@@ -60,7 +60,7 @@ class Environment:
         obs, reward, done, _ = self.env.step(action)
 
         self.episode_return += reward
-        episode_return = self.episode_return 
+        episode_return = self.episode_return
 
         if done:
             obs = self.env.reset()

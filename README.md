@@ -184,19 +184,19 @@ python3 evaluate.py
 ```
 Some important hyperparameters are as follows.
 *   `--landlord`: which agent will play as Landlord, which can be random, rlcard, or the path of the pre-trained model
-*   `--landlord_up`: which agent will play as LandlordUp (the one plays before the Landlord), which can be random, rlcard, or the path of the pre-trained model
-*   `--landlord_down`: which agent will play as LandlordDown (the one plays after the Landlord), which can be random, rlcard, or the path of the pre-trained model
+*   `--second_hand`: which agent will play as LandlordUp (the one plays before the Landlord), which can be random, rlcard, or the path of the pre-trained model
+*   `--pk_dp`: which agent will play as LandlordDown (the one plays after the Landlord), which can be random, rlcard, or the path of the pre-trained model
 *   `--eval_data`: the pickle file that contains evaluation data
 *   `--num_workers`: how many subprocesses will be used
 *   `--gpu_device`: which GPU to use. It will use CPU by default
 
 For example, the following command evaluates DouZero-ADP in Landlord position against random agents
 ```
-python3 evaluate.py --landlord baselines/douzero_ADP/landlord.ckpt --landlord_up random --landlord_down random
+python3 evaluate.py --landlord baselines/douzero_ADP/landlord.ckpt --second_hand random --pk_dp random
 ```
 The following command evaluates DouZero-ADP in Peasants position against RLCard agents
 ```
-python3 evaluate.py --landlord rlcard --landlord_up baselines/douzero_ADP/landlord_up.ckpt --landlord_down baselines/douzero_ADP/landlord_down.ckpt
+python3 evaluate.py --landlord rlcard --second_hand baselines/douzero_ADP/second_hand.ckpt --pk_dp baselines/douzero_ADP/pk_dp.ckpt
 ```
 By default, our model will be saved in `douzero_checkpoints/douzero` every half an hour. We provide a script to help you identify the most recent checkpoint. Run
 ```

@@ -82,12 +82,16 @@ class GameEnv(object):
         self.players = players
 
         self.last_move_dict = {'landlord': [],
-                               'landlord_up': [],
-                               'landlord_down': []}
+                               'second_hand': [],
+                               'pk_dp': []}
 
         self.played_cards = {'landlord': [],
-                             'landlord_up': [],
-                             'landlord_down': []}
+                             'second_hand': [],
+                             'pk_dp': []}
+        
+        self.played_actions = {'landlord': [],
+                             'second_hand': [],
+                             'pk_dp': []}
 
         self.last_move = []
         self.last_two_moves = []
@@ -99,13 +103,18 @@ class GameEnv(object):
                            'farmer': 0}
 
         self.info_sets = {'landlord': InfoSet('landlord'),
-                         'landlord_up': InfoSet('landlord_up'),
-                         'landlord_down': InfoSet('landlord_down'),}
+                         'second_hand': InfoSet('second_hand'),
+                         'pk_dp': InfoSet('pk_dp'),}
 
         self.bomb_num = 0
         self.last_pid = 'landlord'
         self.round = 0
-        self.scores = 0
+        self.scores = {
+            'landlord': 0,
+            'second_hand': 0,
+            'pk_dp': 0,
+            }
+        self.deck_cards = []
 
     def card_play_init(self, card_play_data):
         self.info_sets['landlord'].player_hand_cards = []
@@ -121,26 +130,54 @@ class GameEnv(object):
             else:
                 self.info_sets['landlord'].player_deck_cards.extend([card])
         self.info_sets['landlord'].player_deck_cards.extend(card_play_data['landlord'][6:])
+
+        self.info_sets['pk_dp'].player_hand_cards = []
+        self.info_sets['pk_dp'].player_deck_cards = []
+        self.info_sets['pk_dp'].player_hand_cards.extend(self.info_sets['landlord'].player_hand_cards)
+        self.info_sets['pk_dp'].player_deck_cards.extend(self.info_sets['landlord'].player_deck_cards)
+
+        # for debug
+        self.deck_cards.extend(self.info_sets['landlord'].player_hand_cards)
+        self.deck_cards.extend(self.info_sets['landlord'].player_deck_cards)
         self.get_acting_player_position()
         
         self.rival_num = 0
         self.companion_num = 0
 
         self.round = 1
-        self.scores = 0
+        self.scores = {
+            'landlord': 0,
+            'second_hand': 0,
+            'pk_dp': 0,
+            }
         self.game_infoset = self.get_infoset()
 
     def game_done(self):
-        if self.round >= 15 or len(self.info_sets[self.acting_player_position].player_deck_cards) == 0:
+        if self.round >= 15 or len(self.info_sets[self.acting_player_position].player_deck_cards) == 0 or \
+            abs(self.scores["landlord"] - self.scores["pk_dp"]) >= 20:
             # if one of the three players discards his hand,
             # then game is over.
+            if self.scores["landlord"] > self.scores["pk_dp"] and self.scores["landlord"] > 100:
+                self.debug()
             self.update_num_wins_scores()
             self.game_over = True
 
+    def debug(self):
+        print ("MYWEN", self.scores["landlord"], self.scores["pk_dp"])
+        round = 1
+        for action in self.played_actions["landlord"]:
+            print ("MYWEN landlord", round, [HearthStone[card]["name"] for card in action], ms.calculateScore(action, HearthStone, 0, 0, 0))
+            round += 1
+
+        round = 1
+        for action in self.played_actions["pk_dp"]:
+            print ("MYWEN pk_dp", round, [HearthStone[card]["name"] for card in action], ms.calculateScore(action, HearthStone, 0, 0, 0))
+            round += 1
+
     def update_num_wins_scores(self):
-        self.num_scores['landlord'] = self.scores
-        self.num_scores['landlord_up'] = 0
-        self.num_scores['landlord_down'] = 0
+        self.num_scores['landlord'] = 0
+        self.num_scores['second_hand'] = 0
+        self.num_scores['pk_dp'] = 0
 
     def get_winner(self):
         return "landlord"
@@ -162,16 +199,14 @@ class GameEnv(object):
         self.last_move_dict[
             self.acting_player_position] = action.copy()
 
-        self.rival_num = random.randint(1, min(self.round - 1, 7)) if self.round > 1 else 0
-        self.companion_num = random.randint(1, min(self.round - 1, 7)) if self.round > 1 else 0
-        self.scores += ms.calculateScore(action, HearthStone, self.rival_num, self.companion_num, len(self.info_sets[
+        self.scores[self.acting_player_position] += ms.calculateScore(action, HearthStone, self.rival_num, self.companion_num, len(self.info_sets[
                     self.acting_player_position].player_hand_cards))
-        self.round += 1
         
         self.card_play_action_seq.append(action)
         self.update_acting_player_hand_cards(action)
 
         self.played_cards[self.acting_player_position] += action
+        self.played_actions[self.acting_player_position].append(action)
 
         self.game_done()
         if not self.game_over:
@@ -180,12 +215,18 @@ class GameEnv(object):
     
     def get_last_move(self):
         last_move = []
-        if len(self.card_play_action_seq) != 0:
-                last_move = self.card_play_action_seq[-1]
+        if len(self.card_play_action_seq) >= 2:
+                last_move = self.card_play_action_seq[-2]
         return last_move
 
     def get_acting_player_position(self):
-        self.acting_player_position = 'landlord'
+        if self.acting_player_position == 'landlord':
+            self.acting_player_position = 'pk_dp'
+        else:
+            self.acting_player_position = 'landlord'
+            self.rival_num = random.randint(1, min(self.round - 1, 7)) if self.round > 1 else 0
+            self.companion_num = random.randint(1, min(self.round - 1, 7)) if self.round > 1 else 0
+            self.round += 1
         return self.acting_player_position
 
     def update_acting_player_hand_cards(self, action):
@@ -207,7 +248,7 @@ class GameEnv(object):
         all_moves = mg.gen_moves()
 
         overload = len([card for card in self.get_last_move() if card == 19])
-        moves = ms.filter_hearth_stone(all_moves, self.round - overload, HearthStone, self.rival_num, self.companion_num)
+        moves = ms.filter_hearth_stone(all_moves, min(10, self.round) - overload, HearthStone, self.rival_num, self.companion_num)
         moves = moves + [[]]
 
         for m in moves:
@@ -225,23 +266,29 @@ class GameEnv(object):
         self.player_utility_dict = None
 
         self.last_move_dict = {'landlord': [],
-                               'landlord_up': [],
-                               'landlord_down': []}
+                               'second_hand': [],
+                               'pk_dp': []}
 
         self.played_cards = {'landlord': [],
-                             'landlord_up': [],
-                             'landlord_down': []}
-
+                             'second_hand': [],
+                             'pk_dp': []}
+        self.played_actions = {'landlord': [],
+                             'second_hand': [],
+                             'pk_dp': []}
         self.last_move = []
         self.last_two_moves = []
 
         self.info_sets = {'landlord': InfoSet('landlord'),
-                         'landlord_up': InfoSet('landlord_up'),
-                         'landlord_down': InfoSet('landlord_down')}
+                         'second_hand': InfoSet('second_hand'),
+                         'pk_dp': InfoSet('pk_dp')}
 
         self.last_pid = 'landlord'
         self.round = 1
-        self.scores = 0
+        self.scores = {
+            'landlord': 0,
+            'second_hand': 0,
+            'pk_dp': 0,
+            }
 
     def get_infoset(self): # updated, after env.step, so this will be the next env.step
         self.info_sets[
@@ -259,13 +306,19 @@ class GameEnv(object):
 
         self.info_sets[
             self.acting_player_position].last_move_dict = self.last_move_dict
+        
+        self.info_sets[
+            self.acting_player_position].rival_num = self.rival_num
+        
+        self.info_sets[
+            self.acting_player_position].companion_num = self.companion_num
 
         self.info_sets[self.acting_player_position].num_cards_left_dict = \
             {pos: len(self.info_sets[pos].player_hand_cards)
-             for pos in ['landlord']}
+             for pos in [self.acting_player_position]}
 
         self.info_sets[self.acting_player_position].other_hand_cards = []
-        for pos in ['landlord']:
+        for pos in [self.acting_player_position]:
             if pos != self.acting_player_position:
                 self.info_sets[
                     self.acting_player_position].other_hand_cards += \
@@ -281,7 +334,7 @@ class GameEnv(object):
         self.info_sets[
             self.acting_player_position].all_handcards = \
             {pos: self.info_sets[pos].player_hand_cards
-             for pos in ['landlord']}
+             for pos in [self.acting_player_position]}
 
         return deepcopy(self.info_sets[self.acting_player_position])
 
@@ -293,7 +346,7 @@ class InfoSet(object):
     historical moves, etc.
     """
     def __init__(self, player_position):
-        # The player position, i.e., landlord, landlord_down, or landlord_up
+        # The player position, i.e., landlord, pk_dp, or second_hand
         self.player_position = player_position
         # The hand cands of the current player. A list.
         self.player_hand_cards = None
@@ -323,3 +376,7 @@ class InfoSet(object):
         self.last_pid = None
         # The number of bombs played so far
         self.bomb_num = None
+        # rival num
+        self.rival_num = None
+        # companion num
+        self.companion_num = None

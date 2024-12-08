@@ -6,7 +6,7 @@ from douzero.env.game import GameEnv
 def load_card_play_models(card_play_model_path_dict):
     players = {}
 
-    for position in ['landlord', 'landlord_up', 'landlord_down']:
+    for position in ['landlord', 'second_hand', 'pk_dp']:
         if card_play_model_path_dict[position] == 'rlcard':
             from .rlcard_agent import RLCardAgent
             players[position] = RLCardAgent(position)
@@ -42,7 +42,7 @@ def data_allocation_per_worker(card_play_data_list, num_workers):
 
     return card_play_data_list_each_worker
 
-def evaluate(landlord, landlord_up, landlord_down, eval_data, num_workers):
+def evaluate(landlord, second_hand, pk_dp, eval_data, num_workers):
 
     with open(eval_data, 'rb') as f:
         card_play_data_list = pickle.load(f)
@@ -53,8 +53,8 @@ def evaluate(landlord, landlord_up, landlord_down, eval_data, num_workers):
 
     card_play_model_path_dict = {
         'landlord': landlord,
-        'landlord_up': landlord_up,
-        'landlord_down': landlord_down}
+        'second_hand': second_hand,
+        'pk_dp': pk_dp}
 
     num_landlord_wins = 0
     num_farmer_wins = 0

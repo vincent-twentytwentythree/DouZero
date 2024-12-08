@@ -18,8 +18,8 @@ def generate():
     _deck = deck.copy()
     np.random.shuffle(_deck)
     card_play_data = {'landlord': _deck[:20],
-                      'landlord_up': _deck[20:37],
-                      'landlord_down': _deck[37:54],
+                      'second_hand': _deck[20:37],
+                      'pk_dp': _deck[37:54],
                       'three_landlord_cards': _deck[17:20],
                       }
     for key in card_play_data:

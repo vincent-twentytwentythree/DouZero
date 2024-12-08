@@ -47,7 +47,7 @@ class Env:
         # Initialize players
         # We use three dummy player for the target position
         self.players = {}
-        for position in ['landlord', 'landlord_up', 'landlord_down']:
+        for position in ['landlord', 'second_hand', 'pk_dp']:
             self.players[position] = DummyAgent(position)
 
         # Initialize the internal environment
@@ -67,8 +67,8 @@ class Env:
         _deck = deck.copy()
         np.random.shuffle(_deck)
         card_play_data = {'landlord': _deck[:],
-                          'landlord_up': [],
-                          'landlord_down': [],
+                          'second_hand': [],
+                          'pk_dp': [],
                           'three_landlord_cards': [],
                           }
 
@@ -108,16 +108,10 @@ class Env:
         """
         winner = self._game_winner
         scores = self._game_scores
-        if winner == 'landlord':
-            if self.objective == 'adp':
-                return scores
-            else:
-                return 1.0
+        if self.objective == 'adp':
+            return scores["landlord"] - scores["pk_dp"]
         else:
-            if self.objective == 'adp':
-                return -scores
-            else:
-                return -1.0
+            return 1.0 if scores["landlord"] > scores["pk_dp"] else -1.0
 
     @property
     def _game_infoset(self):
@@ -160,7 +154,7 @@ class Env:
     def _acting_player_position(self):
         """
         The player that is active. It can be landlord,
-        landlod_down, or landlord_up.
+        landlod_down, or second_hand.
         """
         return self._env.acting_player_position
 
@@ -207,7 +201,7 @@ def get_obs(infoset):
     several fields. These fields will be used to train the model.
     One can play with those features to improve the performance.
 
-    `position` is a string that can be landlord/landlord_down/landlord_up
+    `position` is a string that can be landlord/pk_dp/second_hand
 
     `x_batch` is a batch of features (excluding the hisorical moves).
     It also encodes the action feature
@@ -221,10 +215,7 @@ def get_obs(infoset):
 
     `z`: same as z_batch but not a batch.
     """
-    if infoset.player_position == 'landlord':
-        return _get_obs_landlord(infoset)
-    else:
-        raise ValueError('')
+    return _get_obs_landlord(infoset)
 
 def _get_one_hot_array(num_left_cards, max_num_cards): # one_hot for num_left_cards
     """
@@ -326,11 +317,11 @@ def _get_obs_landlord(infoset):
         z[np.newaxis, :, :],
         num_legal_actions, axis=0)
     obs = {
-            'position': 'landlord',
-            'x_batch': x_batch.astype(np.float32),
-            'z_batch': z_batch.astype(np.float32),
-            'legal_actions': infoset.legal_actions,
-            'x_no_action': x_no_action.astype(np.int8),
+            'position': infoset.player_position,
+            'x_batch': x_batch.astype(np.float32), # shape (num_legal_actions, 4 * 40)
+            'z_batch': z_batch.astype(np.float32), # shape (num_legal_actions, 5 * 120)
+            'legal_actions': infoset.legal_actions, # shape (num_legal_actions, 40)
+            'x_no_action': x_no_action.astype(np.int8), # shape (3 * 40)
             'z': z.astype(np.int8),
           }
     return obs

@@ -19,7 +19,7 @@ mean_episode_return_buf = {p:deque(maxlen=100) for p in ['landlord', 'second_han
 def compute_loss(logits, targets):
     loss = ((logits.squeeze(-1) - targets)**2).mean()
     return loss
-
+    
 def learn(position,
           actor_models,
           model,
@@ -241,6 +241,16 @@ def train(flags):
                      position_fps['second_hand'],
                      position_fps['pk_dp'],
                      pprint.pformat(stats))
+            
+            # for device in device_iterator:
+            #     log.info("freequeue %d %d %d", len(free_queue[device]['landlord']),
+            #         len(free_queue[device]['second_hand']),
+            #         len(free_queue[device]['pk_dp'].put(m))
+            #     )
+            #     log.info("fullqueue %d %d %d", len(full_queue[device]['landlord']),
+            #         len(full_queue[device]['second_hand']),
+            #         len(full_queue[device]['pk_dp'].put(m))
+            #     )
 
     except KeyboardInterrupt:
         return 

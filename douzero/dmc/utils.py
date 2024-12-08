@@ -11,7 +11,7 @@ from torch import multiprocessing as mp
 
 from .env_utils import Environment
 from douzero.env import Env
-from douzero.env.env import _cards2array
+from douzero.env.env import _cards2array, _get_one_hot_array
 
 shandle = logging.StreamHandler()
 shandle.setFormatter(
@@ -79,13 +79,14 @@ def create_buffers(flags, device_iterator):
     for device in device_iterator:
         buffers[device] = {}
         for position in positions:
-            x_dim = 120
+            # MYWEN
+            x_dim = 144
             specs = dict(
                 done=dict(size=(T,), dtype=torch.bool),
                 episode_return=dict(size=(T,), dtype=torch.float32),
                 target=dict(size=(T,), dtype=torch.float32),
                 obs_x_no_action=dict(size=(T, x_dim), dtype=torch.int8),
-                obs_action=dict(size=(T, 40), dtype=torch.int8),
+                obs_action=dict(size=(T, 60), dtype=torch.int8),
                 obs_z=dict(size=(T, 5, 120), dtype=torch.int8),
             )
             _buffers: Buffers = {key: [] for key in specs}
@@ -159,7 +160,8 @@ def act(i, device, free_queue, full_queue, model, buffers, flags):
                     agent_output = model.forward(position, obs['z_batch'], obs['x_batch'], flags=flags)
                 _action_idx = int(agent_output['action'].cpu().detach().numpy())
                 action = obs['legal_actions'][_action_idx]
-                obs_action_buf[position].append(_cards2tensor(action))
+                other_details = obs['other_details'][_action_idx]
+                obs_action_buf[position].append(_cards2tensor(other_details, action))
                 size[position] += 1
                 position, obs, env_output = env.step(action)
                 if env_output['done']:
@@ -204,12 +206,16 @@ def act(i, device, free_queue, full_queue, model, buffers, flags):
         print()
         raise e
 
-def _cards2tensor(list_cards):
+def _cards2tensor(other_details, list_cards):
     """
     Convert a list of integers to the tensor
     representation
     See Figure 2 in https://arxiv.org/pdf/2106.06135.pdf
     """
-    matrix = _cards2array(list_cards)
+    matrix = np.hstack((
+        _get_one_hot_array(other_details[0], 10),
+        _get_one_hot_array(other_details[1], 10),
+        _cards2array(list_cards)
+    ))
     matrix = torch.from_numpy(matrix)
     return matrix

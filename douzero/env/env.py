@@ -222,8 +222,8 @@ def _get_one_hot_array(num_left_cards, max_num_cards): # one_hot for num_left_ca
     A utility function to obtain one-hot endoding
     """
     one_hot = np.zeros(max_num_cards)
-    one_hot[num_left_cards - 1] = 1
-
+    if num_left_cards >= 1:
+        one_hot[num_left_cards - 1] = 1
     return one_hot
 
 def _cards2array(list_cards): # size of 40
@@ -291,6 +291,26 @@ def _get_obs_landlord(infoset):
     my_handcards_batch = np.repeat(my_handcards[np.newaxis, :],
                                    num_legal_actions, axis=0)
 
+    if len(infoset.player_hand_cards) > 10:
+        print (infoset.player_hand_cards)
+    my_handcards_left = _get_one_hot_array(
+        len(infoset.player_hand_cards), 10)
+    my_handcards_left_batch = np.repeat(
+        my_handcards_left[np.newaxis, :],
+        num_legal_actions, axis=0)
+    
+    companions_left = _get_one_hot_array(
+        infoset.companion_num_on_battlefield, 7)
+    companions_left_batch = np.repeat(
+        companions_left[np.newaxis, :],
+        num_legal_actions, axis=0)
+    
+    rivals_left = _get_one_hot_array(
+        infoset.rival_num_on_battlefield, 7)
+    rivals_left_batch = np.repeat(
+        rivals_left[np.newaxis, :],
+        num_legal_actions, axis=0)
+    
     player_deck_cards = _cards2array(infoset.player_deck_cards)
     player_deck_cards_batch = np.repeat(player_deck_cards[np.newaxis, :],
                                       num_legal_actions, axis=0)
@@ -300,16 +320,30 @@ def _get_obs_landlord(infoset):
                                   num_legal_actions, axis=0)
 
     my_action_batch = np.zeros(my_handcards_batch.shape)
+    minion_be_bursted_batch = np.zeros(my_handcards_left_batch.shape)
+    spell_power_increased_batch = np.zeros(my_handcards_left_batch.shape)
+    other_details = []
     for j, action in enumerate(infoset.legal_actions):
         my_action_batch[j, :] = _cards2array(action)
+        minion_be_bursted_batch[j,:] = _get_one_hot_array(infoset.minion_be_bursted[j], 10)
+        spell_power_increased_batch[j,:] = _get_one_hot_array(infoset.spell_power_increased[j], 10)
+        other_details.append([infoset.minion_be_bursted[j], infoset.spell_power_increased[j]])
 
-    x_batch = np.hstack((my_handcards_batch,
-                         player_deck_cards_batch,
-                         last_action_batch,
-                         my_action_batch))
+    x_batch = np.hstack((my_handcards_batch, # 40
+                         player_deck_cards_batch, # 40
+                         last_action_batch, # 40
+                         my_handcards_left_batch, # 10
+                         companions_left_batch, # 7
+                         rivals_left_batch, # 7
+                         minion_be_bursted_batch, # 10
+                         spell_power_increased_batch, # 10
+                         my_action_batch)) # 40
     x_no_action = np.hstack((my_handcards,
-                             player_deck_cards,
-                             last_action,
+                            player_deck_cards,
+                            last_action,
+                            my_handcards_left,
+                            companions_left,
+                            rivals_left,
                              ))
     z = _action_seq_list2array(_process_action_seq(
         infoset.card_play_action_seq))
@@ -318,10 +352,11 @@ def _get_obs_landlord(infoset):
         num_legal_actions, axis=0)
     obs = {
             'position': infoset.player_position,
-            'x_batch': x_batch.astype(np.float32), # shape (num_legal_actions, 4 * 40)
+            'x_batch': x_batch.astype(np.float32), # shape (num_legal_actions, 4 * 40 + 2 * 7 + 3 * 10)
             'z_batch': z_batch.astype(np.float32), # shape (num_legal_actions, 5 * 120)
             'legal_actions': infoset.legal_actions, # shape (num_legal_actions, 40)
-            'x_no_action': x_no_action.astype(np.int8), # shape (3 * 40)
+            'x_no_action': x_no_action.astype(np.int8), # shape (4 * 40 + 2 * 7),
+            'other_details': other_details, # shape (num_legal_actions, 2)
             'z': z.astype(np.int8),
           }
     return obs

@@ -26,6 +26,7 @@ def _format_observation(obs, device):
     obs = {'x_batch': x_batch,
            'z_batch': z_batch,
            'legal_actions': obs['legal_actions'],
+           'other_details': obs['other_details']
            }
     return position, obs, x_no_action, z
 

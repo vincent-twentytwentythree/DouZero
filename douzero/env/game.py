@@ -4,6 +4,23 @@ from .move_generator import MovesGener
 import json
 import random
 
+Card2Column = {}
+for i in range(1, 4 + 1):
+    Card2Column[i] = i - 1
+for i in range(10, 20 + 1):
+    Card2Column[i] = i - 6
+for i in range(23, 28 + 1):
+    Card2Column[i] = i - 8
+
+Column2Card = {value: key for key, value in Card2Column.items()}
+
+CardTypeToIndex = {
+    "spell": 0,
+    "aoe_spell": 1,
+    "minion": 2,
+    "minion_with_burst": 3,
+    "minion_increase_spell_power": 4
+}
 RealCard2EnvCard = {
                     # 幸运币
                     'GAME_005': 1, 
@@ -61,10 +78,8 @@ HearthStone = {}
 with open("hearthstone.json", "rb") as file:
     data = json.load(file)
     for i, value in enumerate(data):
-        if "isSpell" not in value:
-            value["isSpell"] = False
-        if "isPowerPlus" not in value:
-            value["isPowerPlus"] = False
+        if "type" not in value:
+            value["type"] = "minion"
     HearthStone = {RealCard2EnvCard[value["cardId"]]: value for i, value in enumerate(data) if value["cardId"] in RealCard2EnvCard}
 
 class GameEnv(object):
@@ -117,8 +132,11 @@ class GameEnv(object):
         self.deck_cards = []
 
     def card_play_init(self, card_play_data):
+        # #  ['水宝宝鱼人', '三角测量', '流彩巨岩', '艾瑞达蛮兵', '织法者玛里苟斯', '虚灵神谕者', '立体书', '立体书', '极紫外破坏者', '麦芽岩浆', '消融元素', '艾瑞达蛮兵', '月石重拳手', '奇利亚斯豪华版3000型', '极紫外破坏者', '陨石风暴', '电击学徒', '虚灵神谕者', '麦芽岩浆', '陨石风暴', '流彩巨岩', '消融元素', '水宝宝鱼人', '伊辛迪奥斯', '月石重拳手', '电击学徒', '“焦油泥浆怪', ' 针岩图腾', '“焦油泥浆怪', '三角测量']
+        # card_play_data['landlord'] = [18, 23, 10, 14, 4, 12, 24, 24, 15, 26, 11, 14, 17, 3, 15, 25, 16, 12, 26, 25, 10, 11, 18, 2, 17, 16, 13, 20, 13, 23]
         self.info_sets['landlord'].player_hand_cards = []
         self.info_sets['landlord'].player_deck_cards = []
+
         for card in card_play_data['landlord'][:3]:
             if HearthStone[card]["cost"] <= 2:
                 self.info_sets['landlord'].player_hand_cards.extend([card])
@@ -131,18 +149,20 @@ class GameEnv(object):
                 self.info_sets['landlord'].player_deck_cards.extend([card])
         self.info_sets['landlord'].player_deck_cards.extend(card_play_data['landlord'][6:])
 
+
         self.info_sets['pk_dp'].player_hand_cards = []
         self.info_sets['pk_dp'].player_deck_cards = []
         self.info_sets['pk_dp'].player_hand_cards.extend(self.info_sets['landlord'].player_hand_cards)
         self.info_sets['pk_dp'].player_deck_cards.extend(self.info_sets['landlord'].player_deck_cards)
 
         # for debug
+        self.deck_cards = []
         self.deck_cards.extend(self.info_sets['landlord'].player_hand_cards)
         self.deck_cards.extend(self.info_sets['landlord'].player_deck_cards)
         self.get_acting_player_position()
         
-        self.rival_num = 0
-        self.companion_num = 0
+        self.rival_num_on_battlefield = 0
+        self.companion_num_on_battlefield = 0
 
         self.round = 1
         self.scores = {
@@ -153,16 +173,18 @@ class GameEnv(object):
         self.game_infoset = self.get_infoset()
 
     def game_done(self):
-        if self.round >= 15 or len(self.info_sets[self.acting_player_position].player_deck_cards) == 0 or \
+        if self.round >= 12 or len(self.info_sets[self.acting_player_position].player_deck_cards) == 0 or \
             abs(self.scores["landlord"] - self.scores["pk_dp"]) >= 20:
             # if one of the three players discards his hand,
             # then game is over.
-            if self.scores["landlord"] > self.scores["pk_dp"] and self.scores["landlord"] > 100:
-                self.debug()
+            # if self.scores["landlord"] < self.scores["pk_dp"] and self.scores["landlord"] < 20:
+            #     self.debug()
             self.update_num_wins_scores()
             self.game_over = True
 
     def debug(self):
+        print ("MYWEN", self.deck_cards)
+        print ("MYWEN", [HearthStone[card]["name"] for card in self.deck_cards])
         print ("MYWEN", self.scores["landlord"], self.scores["pk_dp"])
         round = 1
         for action in self.played_actions["landlord"]:
@@ -189,9 +211,23 @@ class GameEnv(object):
         return self.scores
 
     def step(self):
-        action = self.players[self.acting_player_position].act(
-            self.game_infoset)
-        assert action in self.game_infoset.legal_actions
+        # print ("MYWEN", self.acting_player_position)
+        # print ("MYWEN", self.round, self.game_infoset.legal_actions)
+        # print ("MYWEN", self.info_sets[self.acting_player_position].player_hand_cards)
+        if self.acting_player_position == 'pk_dp':
+            scoreMax = 0
+            actionMax = []
+            for actionTmp in self.game_infoset.legal_actions:
+                score = ms.calculateScore(actionTmp, HearthStone, self.rival_num_on_battlefield, self.companion_num_on_battlefield, len(self.info_sets[
+                    self.acting_player_position].player_hand_cards))
+                if score > scoreMax:
+                    scoreMax = score
+                    actionMax = actionTmp
+            action = actionMax
+        else:
+            action = self.players[self.acting_player_position].act(
+                self.game_infoset)
+            assert action in self.game_infoset.legal_actions
 
         if len(action) > 0:
             self.last_pid = self.acting_player_position
@@ -199,7 +235,7 @@ class GameEnv(object):
         self.last_move_dict[
             self.acting_player_position] = action.copy()
 
-        self.scores[self.acting_player_position] += ms.calculateScore(action, HearthStone, self.rival_num, self.companion_num, len(self.info_sets[
+        self.scores[self.acting_player_position] += ms.calculateScore(action, HearthStone, self.rival_num_on_battlefield, self.companion_num_on_battlefield, len(self.info_sets[
                     self.acting_player_position].player_hand_cards))
         
         self.card_play_action_seq.append(action)
@@ -224,22 +260,24 @@ class GameEnv(object):
             self.acting_player_position = 'pk_dp'
         else:
             self.acting_player_position = 'landlord'
-            self.rival_num = random.randint(1, min(self.round - 1, 7)) if self.round > 1 else 0
-            self.companion_num = random.randint(1, min(self.round - 1, 7)) if self.round > 1 else 0
+            self.rival_num_on_battlefield = random.randint(1, min(self.round - 1, 7)) if self.round > 1 else 0
+            self.companion_num_on_battlefield = random.randint(1, min(self.round - 1, 7)) if self.round > 1 else 0
             self.round += 1
         return self.acting_player_position
 
     def update_acting_player_hand_cards(self, action):
+        count = 1
+        player_hand_cards = self.info_sets[self.acting_player_position].player_hand_cards
         if action != []:
-            player_hand_cards = self.info_sets[self.acting_player_position].player_hand_cards
-            player_deck_cards = self.info_sets[self.acting_player_position].player_deck_cards
             count = ms.newCards(action, HearthStone, len(player_hand_cards))
-
             for card in action:
                 player_hand_cards.remove(card)
 
-            player_hand_cards.extend(player_deck_cards[:count])
-            self.info_sets[self.acting_player_position].player_deck_cards = player_deck_cards[count:]
+        player_deck_cards = self.info_sets[self.acting_player_position].player_deck_cards
+        for card in player_deck_cards[:count]:
+            if len(player_hand_cards) < 10:
+                player_hand_cards.extend([card])
+        self.info_sets[self.acting_player_position].player_deck_cards = player_deck_cards[count:]
 
     def get_legal_card_play_actions(self):
         mg = MovesGener(
@@ -248,7 +286,7 @@ class GameEnv(object):
         all_moves = mg.gen_moves()
 
         overload = len([card for card in self.get_last_move() if card == 19])
-        moves = ms.filter_hearth_stone(all_moves, min(10, self.round) - overload, HearthStone, self.rival_num, self.companion_num)
+        moves = ms.filter_hearth_stone(all_moves, min(10, self.round) - overload, HearthStone, self.rival_num_on_battlefield, self.companion_num_on_battlefield)
         moves = moves + [[]]
 
         for m in moves:
@@ -299,6 +337,21 @@ class GameEnv(object):
             self.get_legal_card_play_actions()
 
         self.info_sets[
+            self.acting_player_position].card_count_by_type = []
+        self.info_sets[
+            self.acting_player_position].minion_be_bursted = []
+        self.info_sets[
+            self.acting_player_position].spell_power_increased = []
+
+        for action in self.info_sets[self.acting_player_position].legal_actions:
+            self.info_sets[
+                self.acting_player_position].card_count_by_type.append(self.cardClassification(action))
+            self.info_sets[
+                self.acting_player_position].minion_be_bursted.append(self.minionBeBursted(action))
+            self.info_sets[
+                self.acting_player_position].spell_power_increased.append(self.spellPowerIncrease(action))
+
+        self.info_sets[
             self.acting_player_position].bomb_num = self.bomb_num
 
         self.info_sets[
@@ -308,10 +361,10 @@ class GameEnv(object):
             self.acting_player_position].last_move_dict = self.last_move_dict
         
         self.info_sets[
-            self.acting_player_position].rival_num = self.rival_num
+            self.acting_player_position].rival_num_on_battlefield = self.rival_num_on_battlefield
         
         self.info_sets[
-            self.acting_player_position].companion_num = self.companion_num
+            self.acting_player_position].companion_num_on_battlefield = self.companion_num_on_battlefield
 
         self.info_sets[self.acting_player_position].num_cards_left_dict = \
             {pos: len(self.info_sets[pos].player_hand_cards)
@@ -337,6 +390,24 @@ class GameEnv(object):
              for pos in [self.acting_player_position]}
 
         return deepcopy(self.info_sets[self.acting_player_position])
+
+    def cardClassification(self, action):
+        result = [0] * len(CardTypeToIndex)
+        for card in action:
+            cardId = HearthStone[card]["cardId"]
+            type = HearthStone[card]["type"]
+            for key in CardTypeToIndex.keys():
+                if key in type:
+                    result[CardTypeToIndex[key]] += 1
+        return result
+    
+    def spellPowerIncrease(self, action): # increase many times
+        return len([card for card in action if HearthStone[card]["type"] == "minion_increase_spell_power"]) * \
+        len([card for card in action if HearthStone[card]["type"].endswith("spell")])
+    
+    def minionBeBursted(self, action): # only burst once
+        return len([card for card in action if HearthStone[card]["type"] == "minion_with_burst"]) * \
+        (len([card for card in action if HearthStone[card]["type"].endswith("spell")]) > 0)
 
 class InfoSet(object):
     """
@@ -377,6 +448,19 @@ class InfoSet(object):
         # The number of bombs played so far
         self.bomb_num = None
         # rival num
-        self.rival_num = None
+        self.rival_num_on_battlefield = None
         # companion num
-        self.companion_num = None
+        self.companion_num_on_battlefield = None
+        # spell will be increased num this round
+        self.spell_power_increased = None
+        # minion_be_bursted num this round
+        self.minion_be_bursted = None
+
+        # card count by type: list size of 5
+        # spell num
+        # aoe_spell num
+        # minion num
+        # minion_with_burst num
+        # minion_increase_spell_power num
+        self.card_count_by_type = None
+

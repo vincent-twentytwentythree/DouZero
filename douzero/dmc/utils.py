@@ -13,15 +13,6 @@ from .env_utils import Environment
 from douzero.env import Env
 from douzero.env.env import _cards2array
 
-Card2Column = {3: 0, 4: 1, 5: 2, 6: 3, 7: 4, 8: 5, 9: 6, 10: 7,
-               11: 8, 12: 9, 13: 10, 14: 11, 17: 12}
-
-NumOnes2Array = {0: np.array([0, 0, 0, 0]),
-                 1: np.array([1, 0, 0, 0]),
-                 2: np.array([1, 1, 0, 0]),
-                 3: np.array([1, 1, 1, 0]),
-                 4: np.array([1, 1, 1, 1])}
-
 shandle = logging.StreamHandler()
 shandle.setFormatter(
     logging.Formatter(
@@ -64,7 +55,7 @@ def create_optimizers(flags, learner_model):
     """
     Create three optimizers for the three positions
     """
-    positions = ['landlord', 'landlord_up', 'landlord_down']
+    positions = ['landlord']
     optimizers = {}
     for position in positions:
         optimizer = torch.optim.RMSprop(
@@ -88,14 +79,14 @@ def create_buffers(flags, device_iterator):
     for device in device_iterator:
         buffers[device] = {}
         for position in positions:
-            x_dim = 319 if position == 'landlord' else 430
+            x_dim = 120 if position == 'landlord' else 430
             specs = dict(
                 done=dict(size=(T,), dtype=torch.bool),
                 episode_return=dict(size=(T,), dtype=torch.float32),
                 target=dict(size=(T,), dtype=torch.float32),
                 obs_x_no_action=dict(size=(T, x_dim), dtype=torch.int8),
-                obs_action=dict(size=(T, 54), dtype=torch.int8),
-                obs_z=dict(size=(T, 5, 162), dtype=torch.int8),
+                obs_action=dict(size=(T, 40), dtype=torch.int8),
+                obs_z=dict(size=(T, 5, 120), dtype=torch.int8),
             )
             _buffers: Buffers = {key: [] for key in specs}
             for _ in range(flags.num_buffers):
@@ -135,7 +126,7 @@ def act(i, device, free_queue, full_queue, model, buffers, flags):
     data from the environment and send the data to buffer. It uses
     a free queue and full queue to syncup with the main process.
     """
-    positions = ['landlord', 'landlord_up', 'landlord_down']
+    positions = ['landlord']
     try:
         T = flags.unroll_length
         log.info('Device %s Actor %i started.', str(device), i)

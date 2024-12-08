@@ -66,3 +66,4 @@ def newCards(action, hearthStone, hands_num):
                 count += 2
         elif cardId == "CS3_034": # 织法者玛里苟斯
             count += 10 - (hands_num - len(action))
+    return count

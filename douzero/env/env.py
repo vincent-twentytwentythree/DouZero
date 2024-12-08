@@ -107,19 +107,15 @@ class Env:
         or ADP, i.e., every bomb will double the score.
         """
         winner = self._game_winner
-        bomb_num = self._game_bomb_num
+        scores = self._game_scores
         if winner == 'landlord':
             if self.objective == 'adp':
-                return 2.0 ** bomb_num
-            elif self.objective == 'logadp':
-                return bomb_num + 1.0
+                return scores
             else:
                 return 1.0
         else:
             if self.objective == 'adp':
-                return -2.0 ** bomb_num
-            elif self.objective == 'logadp':
-                return -bomb_num - 1.0
+                return -scores
             else:
                 return -1.0
 
@@ -143,6 +139,16 @@ class Env:
         calculate ADP.
         """
         return self._env.get_bomb_num()
+    
+    
+    @property
+    def _game_scores(self):
+        """
+        The number of bombs played so far. This is used as
+        a feature of the neural network and is also used to
+        calculate ADP.
+        """
+        return self._env.get_scores()
 
     @property
     def _game_winner(self):
@@ -217,10 +223,6 @@ def get_obs(infoset):
     """
     if infoset.player_position == 'landlord':
         return _get_obs_landlord(infoset)
-    elif infoset.player_position == 'landlord_up':
-        return _get_obs_landlord_up(infoset)
-    elif infoset.player_position == 'landlord_down':
-        return _get_obs_landlord_down(infoset)
     else:
         raise ValueError('')
 
@@ -287,6 +289,7 @@ def _get_one_hot_bomb(bomb_num):
     one_hot[bomb_num] = 1
     return one_hot
 
+# MYWEN obs details
 def _get_obs_landlord(infoset):
     """
     Obttain the landlord features. See Table 4 in

@@ -30,7 +30,7 @@ RealCard2EnvCard = {
                     # 极紫外破坏者
                     'GDB_901': 15, 
                     # 点击学徒
-                    'TOY_508': 16,
+                    'CS3_007': 16,
                     # 月石重拳手
                     'GDB_435': 17,
                     # 水宝宝鱼人
@@ -127,7 +127,7 @@ class GameEnv(object):
         self.companion_num = 0
 
         self.round = 1
-        self.score = 0
+        self.scores = 0
         self.game_infoset = self.get_infoset()
 
     def game_done(self):
@@ -147,6 +147,9 @@ class GameEnv(object):
 
     def get_bomb_num(self):
         return 0
+    
+    def get_scores(self):
+        return self.scores
 
     def step(self):
         action = self.players[self.acting_player_position].act(

@@ -155,13 +155,17 @@ def train(flags):
         """Thread target for the learning process."""
         nonlocal frames, position_frames, stats
         while frames < flags.total_frames:
+            log.info("batch_and_learn start %d %d %s", i, device, position)
             batch = get_batch(free_queue[device][position], full_queue[device][position], buffers[device][position], flags, local_lock)
+            if position != "landlord":
+                continue
             _stats = learn(position, models, learner_model.get_model(position), batch, 
                 optimizers[position], flags, position_lock)
 
             with lock:
                 for k in _stats:
                     stats[k] = _stats[k]
+                log.info("batch_and_learn finished %d %d %s", i, device, position)
                 to_log = dict(frames=frames)
                 to_log.update({k: stats[k] for k in stat_keys})
                 plogger.log(to_log)
@@ -182,7 +186,7 @@ def train(flags):
 
     for device in device_iterator:
         for i in range(flags.num_threads):
-            for position in ['landlord', 'second_hand']:
+            for position in ['landlord', 'second_hand', 'pk_dp']:
                 thread = threading.Thread(
                     target=batch_and_learn, name='batch-and-learn-%d' % i, args=(i,device,position,locks[device][position],position_locks[position]))
                 thread.start()

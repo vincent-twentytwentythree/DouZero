@@ -130,6 +130,7 @@ class GameEnv(object):
             'pk_dp': 0,
             }
         self.deck_cards = []
+        self.game_over_times = 0
 
     def card_play_init(self, card_play_data):
         # #  ['水宝宝鱼人', '三角测量', '流彩巨岩', '艾瑞达蛮兵', '织法者玛里苟斯', '虚灵神谕者', '立体书', '立体书', '极紫外破坏者', '麦芽岩浆', '消融元素', '艾瑞达蛮兵', '月石重拳手', '奇利亚斯豪华版3000型', '极紫外破坏者', '陨石风暴', '电击学徒', '虚灵神谕者', '麦芽岩浆', '陨石风暴', '流彩巨岩', '消融元素', '水宝宝鱼人', '伊辛迪奥斯', '月石重拳手', '电击学徒', '“焦油泥浆怪', ' 针岩图腾', '“焦油泥浆怪', '三角测量']
@@ -174,13 +175,16 @@ class GameEnv(object):
 
     def game_done(self):
         if self.round >= 12 or len(self.info_sets[self.acting_player_position].player_deck_cards) == 0 or \
-            abs(self.scores["landlord"] - self.scores["pk_dp"]) >= 20:
+            abs(self.scores["landlord"] - self.scores["pk_dp"]) >= 30:
             # if one of the three players discards his hand,
             # then game is over.
             # if self.scores["landlord"] < self.scores["pk_dp"] and self.scores["landlord"] < 20:
             #     self.debug()
             self.update_num_wins_scores()
             self.game_over = True
+            self.game_over_times += 1
+            if self.game_over_times % 1000 == 0:
+                print ("MYWEN game_over", self.game_over_times)
 
     def debug(self):
         print ("MYWEN", self.deck_cards)
@@ -209,7 +213,7 @@ class GameEnv(object):
     
     def get_scores(self):
         return self.scores
-
+    # MYWEN
     def step(self):
         # print ("MYWEN", self.acting_player_position)
         # print ("MYWEN", self.round, self.game_infoset.legal_actions)

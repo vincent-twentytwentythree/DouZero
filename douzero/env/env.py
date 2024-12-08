@@ -78,6 +78,7 @@ class Env:
 
         return get_obs(self.infoset)
 
+    # MYWEN
     def step(self, action):
         """
         Step function takes as input the action, which
@@ -291,8 +292,6 @@ def _get_obs_landlord(infoset):
     my_handcards_batch = np.repeat(my_handcards[np.newaxis, :],
                                    num_legal_actions, axis=0)
 
-    if len(infoset.player_hand_cards) > 10:
-        print (infoset.player_hand_cards)
     my_handcards_left = _get_one_hot_array(
         len(infoset.player_hand_cards), 10)
     my_handcards_left_batch = np.repeat(

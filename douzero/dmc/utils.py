@@ -121,6 +121,7 @@ def create_buffers(flags, device_iterator):
 #         position: queue size of num_buffers
 #     }
 # }
+# MYWEN
 def act(i, device, free_queue, full_queue, model, buffers, flags):
     """
     This function will run forever until we stop it. It will generate

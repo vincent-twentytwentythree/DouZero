@@ -122,7 +122,7 @@ def create_buffers(flags, device_iterator):
 #     }
 # }
 # MYWEN
-def act(i, device, free_queue, full_queue, model, buffers, flags):
+def act(i, device, free_queue, full_queue, model, buffers, flags, lock):
     """
     This function will run forever until we stop it. It will generate
     data from the environment and send the data to buffer. It uses
@@ -166,6 +166,11 @@ def act(i, device, free_queue, full_queue, model, buffers, flags):
                 size[position] += 1
                 position, obs, env_output = env.step(action)
                 if env_output['done']:
+                    if env_output['episode_return'] <= -20:
+                        with lock:
+                            deckCards = env.getDeckCards()
+                            with open("outputDeckCards.txt", "a") as file:
+                                file.write(", ".join(map(str, deckCards)) + "\n")
                     for p in positions:
                         diff = size[p] - len(target_buf[p])
                         if diff > 0:

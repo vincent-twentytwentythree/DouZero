@@ -132,8 +132,11 @@ class GameEnv(object):
         self.deck_cards = []
         self.game_over_times = 0
 
+    def getDeckCards(self):
+        return self.deck_cards
+
     def card_play_init(self, card_play_data):
-        # #  ['水宝宝鱼人', '三角测量', '流彩巨岩', '艾瑞达蛮兵', '织法者玛里苟斯', '虚灵神谕者', '立体书', '立体书', '极紫外破坏者', '麦芽岩浆', '消融元素', '艾瑞达蛮兵', '月石重拳手', '奇利亚斯豪华版3000型', '极紫外破坏者', '陨石风暴', '电击学徒', '虚灵神谕者', '麦芽岩浆', '陨石风暴', '流彩巨岩', '消融元素', '水宝宝鱼人', '伊辛迪奥斯', '月石重拳手', '电击学徒', '“焦油泥浆怪', ' 针岩图腾', '“焦油泥浆怪', '三角测量']
+        # MYWEN ['水宝宝鱼人', '三角测量', '流彩巨岩', '艾瑞达蛮兵', '织法者玛里苟斯', '虚灵神谕者', '立体书', '立体书', '极紫外破坏者', '麦芽岩浆', '消融元素', '艾瑞达蛮兵', '月石重拳手', '奇利亚斯豪华版3000型', '极紫外破坏者', '陨石风暴', '电击学徒', '虚灵神谕者', '麦芽岩浆', '陨石风暴', '流彩巨岩', '消融元素', '水宝宝鱼人', '伊辛迪奥斯', '月石重拳手', '电击学徒', '“焦油泥浆怪', ' 针岩图腾', '“焦油泥浆怪', '三角测量']
         # card_play_data['landlord'] = [18, 23, 10, 14, 4, 12, 24, 24, 15, 26, 11, 14, 17, 3, 15, 25, 16, 12, 26, 25, 10, 11, 18, 2, 17, 16, 13, 20, 13, 23]
         self.info_sets['landlord'].player_hand_cards = []
         self.info_sets['landlord'].player_deck_cards = []
@@ -174,11 +177,11 @@ class GameEnv(object):
         self.game_infoset = self.get_infoset()
 
     def game_done(self):
-        if self.round >= 12 or len(self.info_sets[self.acting_player_position].player_deck_cards) == 0 or \
+        if self.round > 12 or len(self.info_sets[self.acting_player_position].player_deck_cards) == 0 or \
             abs(self.scores["landlord"] - self.scores["pk_dp"]) >= 30:
             # if one of the three players discards his hand,
             # then game is over.
-            # if self.scores["landlord"] < self.scores["pk_dp"] and self.scores["landlord"] < 20:
+            # if abs(self.scores["landlord"] - self.scores["pk_dp"]) < 5:
             #     self.debug()
             self.update_num_wins_scores()
             self.game_over = True
@@ -248,6 +251,10 @@ class GameEnv(object):
         self.played_cards[self.acting_player_position] += action
         self.played_actions[self.acting_player_position].append(action)
 
+        if self.acting_player_position == "pk_dp":
+            self.rival_num_on_battlefield = random.randint(1, min(self.round - 1, 7)) if self.round > 1 else 0
+            self.companion_num_on_battlefield = random.randint(1, min(self.round - 1, 7)) if self.round > 1 else 0
+            self.round += 1
         self.game_done()
         if not self.game_over:
             self.get_acting_player_position()
@@ -264,9 +271,6 @@ class GameEnv(object):
             self.acting_player_position = 'pk_dp'
         else:
             self.acting_player_position = 'landlord'
-            self.rival_num_on_battlefield = random.randint(1, min(self.round - 1, 7)) if self.round > 1 else 0
-            self.companion_num_on_battlefield = random.randint(1, min(self.round - 1, 7)) if self.round > 1 else 0
-            self.round += 1
         return self.acting_player_position
 
     def update_acting_player_hand_cards(self, action):

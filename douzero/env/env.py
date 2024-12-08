@@ -55,6 +55,9 @@ class Env:
 
         self.infoset = None
 
+    def getDeckCards(self):
+        return self._env.getDeckCards()
+    
     def reset(self):
         """
         Every time reset is called, the environment

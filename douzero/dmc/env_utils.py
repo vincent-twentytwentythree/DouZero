@@ -37,6 +37,7 @@ class Environment:
         self.env = env
         self.device = device
         self.episode_return = None
+        self.deck_cards = []
 
     # @positon: landlord second_hand pk_dp
     # @obs: from infoset
@@ -65,6 +66,7 @@ class Environment:
         episode_return = self.episode_return
 
         if done:
+            self.deck_cards = self.env.getDeckCards()
             obs = self.env.reset()
             self.episode_return = torch.zeros(1, 1)
 
@@ -81,3 +83,6 @@ class Environment:
 
     def close(self):
         self.env.close()
+
+    def getDeckCards(self):
+        return self.deck_cards

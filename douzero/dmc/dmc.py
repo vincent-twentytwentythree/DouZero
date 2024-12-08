@@ -142,7 +142,7 @@ def train(flags):
         log.info(f"Resuming preempted job, current stats:\n{stats}")
 
     # Starting actor processes
-    actor_lock = threading.Lock()
+    actor_lock = mp.Lock()
     for device in device_iterator:
         num_actors = flags.num_actors
         for i in range(flags.num_actors):

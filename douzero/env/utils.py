@@ -1,4 +1,5 @@
 import itertools
+import torch
 
 # global parameters
 MIN_SINGLE_CARDS = 5
@@ -31,3 +32,12 @@ RAISE = 2
 # return all possible results of selecting num cards from cards list
 def select(cards, num):
     return [list(i) for i in itertools.combinations(cards, num)]
+
+def getDevice(deviceName):
+    if deviceName == "mps":
+        device = torch.device('mps')
+    elif deviceName == "cpu":
+        device = torch.device('cpu')
+    else :
+        device = torch.device('cuda:'+str(deviceName))
+    return device

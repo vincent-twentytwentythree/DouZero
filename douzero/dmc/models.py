@@ -8,6 +8,8 @@ import numpy as np
 import torch
 from torch import nn
 
+from .utils import getDevice
+
 class LandlordLstmModel(nn.Module):
     def __init__(self):
         super().__init__()
@@ -104,11 +106,10 @@ class Model:
     """
     def __init__(self, device=0):
         self.models = {}
-        if not device == "cpu":
-            device = 'cuda:' + str(device)
-        self.models['landlord'] = LandlordLstmModel().to(torch.device(device))
-        self.models['second_hand'] = FarmerLstmModel().to(torch.device(device))
-        self.models['pk_dp'] = RandomModel().to(torch.device(device))
+        device = getDevice(deviceName=device)
+        self.models['landlord'] = LandlordLstmModel().to(device)
+        self.models['second_hand'] = FarmerLstmModel().to(device)
+        self.models['pk_dp'] = RandomModel().to(device)
 
     def forward(self, position, z, x, training=False, flags=None):
         model = self.models[position]

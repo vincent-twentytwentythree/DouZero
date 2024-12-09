@@ -12,7 +12,7 @@ from torch import nn
 
 from .file_writer import FileWriter
 from .models import Model
-from .utils import get_batch, log, create_env, create_buffers, create_optimizers, act
+from .utils import get_batch, log, create_env, create_buffers, create_optimizers, act, getDevice
 
 mean_episode_return_buf = {p:deque(maxlen=100) for p in ['landlord', 'second_hand', 'pk_dp']}
 
@@ -28,10 +28,7 @@ def learn(position,
           flags,
           lock):
     """Performs a learning (optimization) step."""
-    if flags.training_device != "cpu":
-        device = torch.device('cuda:'+str(flags.training_device))
-    else:
-        device = torch.device('cpu')
+    device = getDevice(deviceName=flags.training_device)
     obs_x_no_action = batch['obs_x_no_action'].to(device)
     obs_action = batch['obs_action'].to(device)
     obs_x = torch.cat((obs_x_no_action, obs_action), dim=2).float()
@@ -66,7 +63,7 @@ def train(flags):
     learning function with  multiple threads.
     """
     if not flags.actor_device_cpu or flags.training_device != 'cpu':
-        if not torch.cuda.is_available():
+        if not torch.cuda.is_available() and not torch.mps.is_available():
             raise AssertionError("CUDA not available. If you have GPUs, please specify the ID after `--gpu_devices`. Otherwise, please train with CPU with `python3 train.py --actor_device_cpu --training_device cpu`")
     plogger = FileWriter(
         xpid=flags.xpid,
@@ -128,8 +125,9 @@ def train(flags):
 
     # Load models if any
     if flags.load_model and os.path.exists(checkpointpath):
+        device = getDevice(deviceName=flags.training_device)
         checkpoint_states = torch.load(
-            checkpointpath, map_location=("cuda:"+str(flags.training_device) if flags.training_device != "cpu" else "cpu")
+            checkpointpath, map_location=(device)
         )
         for k in ['landlord', 'second_hand', 'pk_dp']:
             learner_model.get_model(k).load_state_dict(checkpoint_states["model_state_dict"][k])

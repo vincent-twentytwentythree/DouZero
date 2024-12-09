@@ -5,6 +5,7 @@ the environment, we do it automatically.
 """
 import numpy as np
 import torch 
+from .utils import getDevice
 
 # @positon: landlord second_hand pk_dp
 # @obs: from infoset
@@ -16,9 +17,7 @@ def _format_observation(obs, device):
     move them to CUDA.
     """
     position = obs['position']
-    if not device == "cpu":
-        device = 'cuda:' + str(device)
-    device = torch.device(device)
+    device = getDevice(device)
     x_batch = torch.from_numpy(obs['x_batch']).to(device)
     z_batch = torch.from_numpy(obs['z_batch']).to(device)
     x_no_action = torch.from_numpy(obs['x_no_action'])

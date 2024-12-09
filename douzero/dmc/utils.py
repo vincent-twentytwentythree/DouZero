@@ -27,6 +27,15 @@ log.setLevel(logging.INFO)
 # and learner processes. They are shared tensors in GPU
 Buffers = typing.Dict[str, typing.List[torch.Tensor]]
 
+def getDevice(deviceName):
+    if deviceName == "mps":
+        device = torch.device('mps')
+    elif deviceName == "cpu":
+        device = torch.device('cpu')
+    else :
+        device = torch.device('cuda:'+str(deviceName))
+    return device
+
 # Environment -> Env -> GameEnv
 def create_env(flags):
     return Env(flags.objective)
@@ -92,10 +101,7 @@ def create_buffers(flags, device_iterator):
             _buffers: Buffers = {key: [] for key in specs}
             for _ in range(flags.num_buffers):
                 for key in _buffers:
-                    if not device == "cpu":
-                        _buffer = torch.empty(**specs[key]).to(torch.device('cuda:'+str(device))).share_memory_()
-                    else:
-                        _buffer = torch.empty(**specs[key]).to(torch.device('cpu')).share_memory_()
+                    _buffer = torch.empty(**specs[key]).to(getDevice(deviceName=device)).share_memory_()
                     _buffers[key].append(_buffer)
             buffers[device][position] = _buffers
     return buffers

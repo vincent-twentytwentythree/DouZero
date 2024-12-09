@@ -5,7 +5,15 @@ the environment, we do it automatically.
 """
 import numpy as np
 import torch 
-from .utils import getDevice
+
+def getDevice(deviceName):
+    if deviceName == "mps":
+        device = torch.device('mps')
+    elif deviceName == "cpu":
+        device = torch.device('cpu')
+    else :
+        device = torch.device('cuda:'+str(deviceName))
+    return device
 
 # @positon: landlord second_hand pk_dp
 # @obs: from infoset

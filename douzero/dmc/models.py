@@ -8,7 +8,7 @@ import numpy as np
 import torch
 from torch import nn
 
-from .utils import getDevice
+from .env_utils import getDevice
 
 class LandlordLstmModel(nn.Module):
     def __init__(self):

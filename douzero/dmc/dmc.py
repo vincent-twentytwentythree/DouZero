@@ -78,6 +78,8 @@ def train(flags):
 
     if flags.actor_device_cpu:
         device_iterator = ['cpu']
+    elif flags.actor_device_mps:
+        device_iterator = ['mps']
     else:
         device_iterator = range(flags.num_actor_devices)
         assert flags.num_actor_devices <= len(flags.gpu_devices.split(',')), 'The number of actor devices can not exceed the number of available devices'

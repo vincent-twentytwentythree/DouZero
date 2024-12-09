@@ -13,6 +13,8 @@ parser.add_argument('--objective', default='adp', type=str, choices=['adp', 'wp'
 # Training settings
 parser.add_argument('--actor_device_cpu', action='store_true',
                     help='Use CPU as actor device')
+parser.add_argument('--actor_device_mps', action='store_true',
+                    help='Use MPS as actor device')
 parser.add_argument('--gpu_devices', default='0', type=str,
                     help='Which GPUs to be used for training')
 parser.add_argument('--num_actor_devices', default=1, type=int,

@@ -9,7 +9,7 @@ import time
 import torch 
 from torch import multiprocessing as mp
 
-from .env_utils import Environment
+from .env_utils import Environment, getDevice
 from douzero.env import Env
 from douzero.env.env import _cards2array, _get_one_hot_array
 
@@ -26,15 +26,6 @@ log.setLevel(logging.INFO)
 # Buffers are used to transfer data between actor processes
 # and learner processes. They are shared tensors in GPU
 Buffers = typing.Dict[str, typing.List[torch.Tensor]]
-
-def getDevice(deviceName):
-    if deviceName == "mps":
-        device = torch.device('mps')
-    elif deviceName == "cpu":
-        device = torch.device('cpu')
-    else :
-        device = torch.device('cuda:'+str(deviceName))
-    return device
 
 # Environment -> Env -> GameEnv
 def create_env(flags):

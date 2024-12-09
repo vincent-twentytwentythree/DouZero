@@ -128,6 +128,7 @@ python3 train.py --actor_device_cpu
                       保存模型的时间间隔（以分钟为单位）
 --objective {adp,wp}  使用ADP或者WP作为奖励（默认值：ADP）
 --actor_device_cpu    用CPU进行模拟
+--actor_device_mps    用MPS进行模拟
 --gpu_devices GPU_DEVICES
                       用作训练的GPU设备名
 --num_actor_devices NUM_ACTOR_DEVICES

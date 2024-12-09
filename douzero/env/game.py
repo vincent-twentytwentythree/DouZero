@@ -94,6 +94,9 @@ class GameEnv(object):
         self.played_actions = {'landlord': [],
                              'second_hand': [],
                              'pk_dp': []}
+        self.scores_of_each_actions = {'landlord': [],
+                        'second_hand': [],
+                        'pk_dp': []}
 
         self.last_move = []
         self.last_two_moves = []
@@ -123,8 +126,13 @@ class GameEnv(object):
         return self.deck_cards
 
     def card_play_init(self, card_play_data):
-        # MYWEN ['水宝宝鱼人', '三角测量', '流彩巨岩', '艾瑞达蛮兵', '织法者玛里苟斯', '虚灵神谕者', '立体书', '立体书', '极紫外破坏者', '麦芽岩浆', '消融元素', '艾瑞达蛮兵', '月石重拳手', '奇利亚斯豪华版3000型', '极紫外破坏者', '陨石风暴', '电击学徒', '虚灵神谕者', '麦芽岩浆', '陨石风暴', '流彩巨岩', '消融元素', '水宝宝鱼人', '伊辛迪奥斯', '月石重拳手', '电击学徒', '“焦油泥浆怪', ' 针岩图腾', '“焦油泥浆怪', '三角测量']
-        # card_play_data['landlord'] = [18, 23, 10, 14, 4, 12, 24, 24, 15, 26, 11, 14, 17, 3, 15, 25, 16, 12, 26, 25, 10, 11, 18, 2, 17, 16, 13, 20, 13, 23]
+        
+        cardSetForTest = ['水宝宝鱼人', '三角测量', '流彩巨岩', '艾瑞达蛮兵', '织法者玛里苟斯', '虚灵神谕者', \
+                           '立体书', '立体书', '极紫外破坏者', '麦芽岩浆', '消融元素', '艾瑞达蛮兵', '月石重拳手', \
+                            '奇利亚斯豪华版3000型', '极紫外破坏者', '陨石风暴', '电击学徒', '虚灵神谕者', '麦芽岩浆', \
+                            '陨石风暴', '流彩巨岩', '消融元素', '水宝宝鱼人', '伊辛迪奥斯', '月石重拳手', '电击学徒', \
+                            '“焦油泥浆怪', ' 针岩图腾', '“焦油泥浆怪', '三角测量'] # MYWEN
+        card_play_data['landlord'] = [12, 15, 4, 8, 3, 6, 16, 16, 9, 18, 5, 8, 11, 2, 9, 17, 10, 6, 18, 17, 4, 5, 12, 1, 11, 10, 15]
         self.info_sets['landlord'].player_hand_cards = []
         self.info_sets['landlord'].player_deck_cards = []
 
@@ -169,25 +177,25 @@ class GameEnv(object):
             # if one of the three players discards his hand,
             # then game is over.
             # if abs(self.scores["landlord"] - self.scores["pk_dp"]) < 5:
-            #     self.debug()
+            # self.debug()
             self.update_num_wins_scores()
             self.game_over = True
             self.game_over_times += 1
             if self.game_over_times % 1000 == 0:
                 print ("MYWEN game_over", self.game_over_times)
 
-    def debug(self):
+    def debug(self): # MYWEN
         print ("MYWEN", self.deck_cards)
         print ("MYWEN", [HearthStone[card]["name"] for card in self.deck_cards])
         print ("MYWEN", self.scores["landlord"], self.scores["pk_dp"])
         round = 1
-        for action in self.played_actions["landlord"]:
-            print ("MYWEN landlord", round, [HearthStone[card]["name"] for card in action], ms.calculateScore(action, HearthStone, 0, 0, 0))
+        for index, action in enumerate(self.played_actions["landlord"]):
+            print ("MYWEN landlord", round, [HearthStone[card]["name"] for card in action], self.scores_of_each_actions["landlord"][index])
             round += 1
 
         round = 1
-        for action in self.played_actions["pk_dp"]:
-            print ("MYWEN pk_dp", round, [HearthStone[card]["name"] for card in action], ms.calculateScore(action, HearthStone, 0, 0, 0))
+        for index, action in enumerate(self.played_actions["pk_dp"]):
+            print ("MYWEN pk_dp", round, [HearthStone[card]["name"] for card in action], self.scores_of_each_actions["pk_dp"][index])
             round += 1
 
     def update_num_wins_scores(self):
@@ -229,14 +237,16 @@ class GameEnv(object):
         self.last_move_dict[
             self.acting_player_position] = action.copy()
 
-        self.scores[self.acting_player_position] += ms.calculateScore(action, HearthStone, self.rival_num_on_battlefield, self.companion_num_on_battlefield, len(self.info_sets[
+        score_of_action = ms.calculateScore(action, HearthStone, self.rival_num_on_battlefield, self.companion_num_on_battlefield, len(self.info_sets[
                     self.acting_player_position].player_hand_cards))
+        self.scores[self.acting_player_position] += score_of_action
         
         self.card_play_action_seq.append(action)
         self.update_acting_player_hand_cards(action)
 
         self.played_cards[self.acting_player_position] += action
         self.played_actions[self.acting_player_position].append(action)
+        self.scores_of_each_actions[self.acting_player_position].extend([score_of_action])
 
         if self.acting_player_position == "pk_dp":
             self.rival_num_on_battlefield = random.randint(1, min(self.round - 1, 7)) if self.round > 1 else 0
@@ -308,6 +318,10 @@ class GameEnv(object):
         self.played_actions = {'landlord': [],
                              'second_hand': [],
                              'pk_dp': []}
+        self.scores_of_each_actions = {'landlord': [],
+                        'second_hand': [],
+                        'pk_dp': []}
+        
         self.last_move = []
         self.last_two_moves = []
 
@@ -380,6 +394,9 @@ class GameEnv(object):
             self.card_play_action_seq
         self.info_sets[self.acting_player_position].played_actions = \
             self.played_actions[self.acting_player_position]
+        
+        self.info_sets[self.acting_player_position].scores_of_each_actions = \
+            self.scores_of_each_actions[self.acting_player_position]
 
         self.info_sets[
             self.acting_player_position].all_handcards = \
@@ -414,12 +431,11 @@ class GameEnv(object):
         return result
     
     def spellPowerIncrease(self, action): # increase many times
-        return len([card for card in action if HearthStone[card]["type"] == "minion_increase_spell_power"]) * \
-        len([card for card in action if HearthStone[card]["type"].endswith("spell")])
+        return len([card for card in action if "法术伤害+" in HearthStone[card]["text"]]) * \
+        len([card for card in action if HearthStone[card]["type"] == "SPELL" ])
     
     def minionBeBursted(self, action): # only burst once
-        return len([card for card in action if HearthStone[card]["type"] == "minion_with_burst"]) * \
-        (len([card for card in action if HearthStone[card]["type"].endswith("spell")]) > 0)
+        return len([ card for card in action if "法术迸发" in HearthStone[card]["text"] ]) * 2 # MYWEN todo hard code each burst value 2
 
 class InfoSet(object):
     """
@@ -477,4 +493,7 @@ class InfoSet(object):
         # minion_with_burst num
         # minion_increase_spell_power num
         self.card_count_by_type = None
+
+        # scores_of_each_actions
+        self.scores_of_each_actions = None
 

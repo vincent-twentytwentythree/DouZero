@@ -216,7 +216,7 @@ def train(flags):
     fps_log = []
     timer = timeit.default_timer
     try:
-        last_checkpoint_time = timer() - flags.save_interval * 60
+        last_checkpoint_time = timer()
         while frames < flags.total_frames:
             start_frames = frames
             position_start_frames = {k: position_frames[k] for k in position_frames}

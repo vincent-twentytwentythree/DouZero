@@ -27,7 +27,7 @@ def calculateScore(action, hearthStone, rival_num_on_battlefield, companion_num_
             score += hearthStone[card]["cost"]
 
     # 法强+1
-    power_plus_count = len([card for card in action if "minion_increase_spell_power" in hearthStone[card]["type"] ])
+    power_plus_count = len([card for card in action if "法术伤害+" in hearthStone[card]["text"] ])
     for card in action:
         cardId = hearthStone[card]["id"]
         if cardId == "TOY_508": # 立体书
@@ -38,7 +38,7 @@ def calculateScore(action, hearthStone, rival_num_on_battlefield, companion_num_
             score += power_plus_count * (rival_num_on_battlefield - companion_num_on_battlefield)
 
     # 法术迸发
-    spell_count = len([card for card in action if hearthStone[card]["type"].endswith("spell") ])
+    spell_count = len([ card for card in action if hearthStone[card]["type"] == "SPELL" ])
     for card in action:
         cardId = hearthStone[card]["id"]
         if cardId == "GDB_434" and spell_count > 0: # 流彩巨岩

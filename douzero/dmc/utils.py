@@ -161,14 +161,14 @@ def act(i, device, free_queue, full_queue, model, buffers, flags, lock): # MYWEN
                 size[position] += 1
                 position, obs, env_output = env.step(action)
                 if env_output['done']:
-                    if env_output['episode_return'] <= -20:
-                        deckCardBatch.append(env.getDeckCards())
-                        if len(deckCardBatch) > 20:
-                            with lock:
-                                with open("outputDeckCards.txt", "a") as file:
-                                    for deckCard in deckCardBatch:
-                                        file.write(", ".join(map(str, deckCard)) + "\n")
-                                deckCardBatch = []
+                    # if env_output['episode_return'] <= -20:
+                    #     deckCardBatch.append(env.getDeckCards())
+                    #     if len(deckCardBatch) > 20:
+                    #         with lock:
+                    #             with open("outputDeckCards.txt", "a") as file:
+                    #                 for deckCard in deckCardBatch:
+                    #                     file.write(", ".join(map(str, deckCard)) + "\n")
+                    #             deckCardBatch = []
                     for p in positions:
                         diff = size[p] - len(target_buf[p])
                         if diff > 0:
@@ -178,7 +178,8 @@ def act(i, device, free_queue, full_queue, model, buffers, flags, lock): # MYWEN
                             episode_return = env_output['episode_return'] if p == 'landlord' else -env_output['episode_return']
                             episode_return_buf[p].extend([0.0 for _ in range(diff-1)])
                             episode_return_buf[p].append(episode_return)
-                            target_buf[p].extend([episode_return for _ in range(diff)])
+                            target_buf[p].extend([0.0 for _ in range(4)])
+                            target_buf[p].extend([episode_return for _ in range(diff - 4)])
                     break
 
             for p in positions:

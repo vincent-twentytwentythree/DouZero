@@ -3,14 +3,6 @@ import numpy as np
 
 from douzero.env.game import GameEnv
 
-Card2Column = {}
-for i in range(1, 4 + 1):
-    Card2Column[i] = i - 1
-for i in range(10, 20 + 1):
-    Card2Column[i] = i - 6
-for i in range(23, 28 + 1):
-    Card2Column[i] = i - 8
-
 NumOnes2Array = {0: np.array([0, 0]),
                  1: np.array([1, 0]),
                  2: np.array([1, 1])}
@@ -18,13 +10,13 @@ NumOnes2Array = {0: np.array([0, 0]),
 deck = []
 
 # 法术
-for i in range(23, 26 + 1):
+for i in range(15, 18 + 1):
     deck.extend([i for _ in range(2)])
 
 # 随从
-for i in range(10, 18 + 1):
+for i in range(4, 12 + 1):
     deck.extend([i for _ in range(2)])
-deck.extend([2, 3, 4, 20])
+deck.extend([1, 2, 3, 14])
 
 class Env:
     """
@@ -81,8 +73,7 @@ class Env:
 
         return get_obs(self.infoset)
 
-    # MYWEN
-    def step(self, action):
+    def step(self, action): # MYWEN
         """
         Step function takes as input the action, which
         is a list of integers, and output the next obervation,
@@ -230,7 +221,7 @@ def _get_one_hot_array(num_left_cards, max_num_cards): # one_hot for num_left_ca
         one_hot[num_left_cards - 1] = 1
     return one_hot
 
-def _cards2array(list_cards): # size of 40
+def _cards2array(list_cards): # size of 42
     """
     A utility function that transforms the actions, i.e.,
     A list of integers into card matrix. Here we remove
@@ -238,12 +229,12 @@ def _cards2array(list_cards): # size of 40
     the representations.
     """
     if len(list_cards) == 0:
-        return np.zeros(40, dtype=np.int8)
+        return np.zeros(42, dtype=np.int8) # 21 * 2
 
-    matrix = np.zeros([2, 20], dtype=np.int8)
+    matrix = np.zeros([2, 21], dtype=np.int8)
     counter = Counter(list_cards)
     for card, num_times in counter.items():
-        matrix[:, Card2Column[card]] = NumOnes2Array[num_times]
+        matrix[:, card] = NumOnes2Array[num_times]
     return matrix.flatten('F')
 
 def _action_seq_list2array(action_seq_list):
@@ -256,10 +247,10 @@ def _action_seq_list2array(action_seq_list):
     Finally, we obtain a 5x162 matrix, which will be fed
     into LSTM for encoding.
     """
-    action_seq_array = np.zeros((len(action_seq_list), 40))
+    action_seq_array = np.zeros((len(action_seq_list), 42))
     for row, list_cards in enumerate(action_seq_list):
         action_seq_array[row, :] = _cards2array(list_cards)
-    action_seq_array = action_seq_array.reshape(5, 120)
+    action_seq_array = action_seq_array.reshape(5, 126)
     return action_seq_array
 
 def _process_action_seq(sequence, length=15):
@@ -284,8 +275,7 @@ def _get_one_hot_bomb(bomb_num):
     one_hot[bomb_num] = 1
     return one_hot
 
-# MYWEN obs details
-def _get_obs_landlord(infoset):
+def _get_obs_landlord(infoset): # MYWEN obs details
     """
     Obttain the landlord features. See Table 4 in
     https://arxiv.org/pdf/2106.06135.pdf
@@ -331,15 +321,15 @@ def _get_obs_landlord(infoset):
         spell_power_increased_batch[j,:] = _get_one_hot_array(infoset.spell_power_increased[j], 10)
         other_details.append([infoset.minion_be_bursted[j], infoset.spell_power_increased[j]])
 
-    x_batch = np.hstack((my_handcards_batch, # 40
-                         player_deck_cards_batch, # 40
-                         last_action_batch, # 40
+    x_batch = np.hstack((my_handcards_batch, # 42
+                         player_deck_cards_batch, # 42
+                         last_action_batch, # 42
                          my_handcards_left_batch, # 10
                          companions_left_batch, # 7
                          rivals_left_batch, # 7
                          minion_be_bursted_batch, # 10
                          spell_power_increased_batch, # 10
-                         my_action_batch)) # 40
+                         my_action_batch)) # 42
     x_no_action = np.hstack((my_handcards,
                             player_deck_cards,
                             last_action,
@@ -348,16 +338,16 @@ def _get_obs_landlord(infoset):
                             rivals_left,
                              ))
     z = _action_seq_list2array(_process_action_seq(
-        infoset.card_play_action_seq))
+        infoset.played_actions))
     z_batch = np.repeat(
         z[np.newaxis, :, :],
         num_legal_actions, axis=0)
     obs = {
             'position': infoset.player_position,
-            'x_batch': x_batch.astype(np.float32), # shape (num_legal_actions, 4 * 40 + 2 * 7 + 3 * 10)
+            'x_batch': x_batch.astype(np.float32), # shape (num_legal_actions, 4 * 42 + 2 * 7 + 3 * 10)
             'z_batch': z_batch.astype(np.float32), # shape (num_legal_actions, 5 * 120)
             'legal_actions': infoset.legal_actions, # shape (num_legal_actions, 40)
-            'x_no_action': x_no_action.astype(np.int8), # shape (4 * 40 + 2 * 7),
+            'x_no_action': x_no_action.astype(np.int8), # shape (4 * 42 + 2 * 7),
             'other_details': other_details, # shape (num_legal_actions, 2)
             'z': z.astype(np.int8),
           }

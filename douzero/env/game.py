@@ -4,83 +4,70 @@ from .move_generator import MovesGener
 import json
 import random
 
-Card2Column = {}
-for i in range(1, 4 + 1):
-    Card2Column[i] = i - 1
-for i in range(10, 20 + 1):
-    Card2Column[i] = i - 6
-for i in range(23, 28 + 1):
-    Card2Column[i] = i - 8
+CardSet = [ # size of 21
+    # 0
+    # 幸运币
+    'GAME_005', 
+    # 1 - 3
+    # 橙卡
+    # 伊辛迪奥斯
+    'VAC_321', 
+    # 奇利亚斯豪华版3000型
+    'TOY_330t11', 
+    # 织法者玛里苟斯
+    'CS3_034', 
+    
+    # 4 - 7
+    # 随从
+    # 流彩巨岩
+    'GDB_434', 
+    # 消融元素
+    'VAC_328', 
+    # 虚灵神谕者
+    'GDB_310',
+    # 焦油泥浆怪
+    'TOY_000',
+    
+    # 8 - 11
+    # 艾瑞达蛮兵
+    'GDB_320', 
+    # 极紫外破坏者
+    'GDB_901', 
+    # 电击学徒
+    'CS3_007',
+    # 月石重拳手
+    'GDB_435',
+    
+    # 12 - 14
+    # 水宝宝鱼人
+    'MIS_307',
+    'MIS_307t1', 
+    # 针岩图腾
+    'DEEP_008', 
+    
+    # 15 - 20
+    # 法术
+    # 三角测量
+    'GDB_451', 
+    # 立体书
+    'TOY_508',
+    # 陨石风暴
+    'GDB_445',
+    # 麦芽岩浆
+    'VAC_323',
+    'VAC_323t',
+    'VAC_323t2',
+]
 
-Column2Card = {value: key for key, value in Card2Column.items()}
-
-CardTypeToIndex = {
-    "spell": 0,
-    "aoe_spell": 1,
-    "minion": 2,
-    "minion_with_burst": 3,
-    "minion_increase_spell_power": 4
-}
-RealCard2EnvCard = {
-                    # 幸运币
-                    'GAME_005': 1, 
-
-                    # 橙卡
-                    # 伊辛迪奥斯
-                    'VAC_321': 2, 
-                    # 奇利亚斯豪华版3000型
-                    'TOY_330t11': 3, 
-                    # 织法者玛里苟斯
-                    'CS3_034': 4, 
-
-                    # 随从
-                    # 流彩巨岩
-                    'GDB_434': 10, 
-                    # 消融元素
-                    'VAC_328': 11, 
-                    # 虚灵神谕者
-                    'GDB_310': 12,
-                    # 焦油泥浆怪
-                    'TOY_000': 13,
-                    # 艾瑞达蛮兵
-                    'GDB_320': 14, 
-                    # 极紫外破坏者
-                    'GDB_901': 15, 
-                    # 点击学徒
-                    'CS3_007': 16,
-                    # 月石重拳手
-                    'GDB_435': 17,
-                    # 水宝宝鱼人
-                    'MIS_307': 18,
-                    'MIS_307t1': 19, 
-                    # 针岩图腾
-                    'DEEP_008': 20, 
-
-                    # 法术
-                    # 三角测量
-                    'GDB_451': 23, 
-                    # 立体书
-                    'TOY_508': 24,
-                    # 陨石风暴
-                    'GDB_445': 25,
-                    # 麦芽岩浆
-                    'VAC_323': 26,
-                    'VAC_323t': 27,
-                    'VAC_323t2': 28,
-
-                    }
-
+RealCard2EnvCard = {key: index for index, key in enumerate(CardSet)}
 EnvCard2RealCard = {value: key for key, value in RealCard2EnvCard.items()}
 
 #
 HearthStone = {}
 # Open and load the JSON file
-with open("hearthstone.json", "rb") as file:
+with open("cards.json", "rb") as file:
     data = json.load(file)
-    for i, value in enumerate(data):
-        if "type" not in value:
-            value["type"] = "minion"
-    HearthStone = {RealCard2EnvCard[value["cardId"]]: value for i, value in enumerate(data) if value["cardId"] in RealCard2EnvCard}
+    HearthStone = {RealCard2EnvCard[value["id"]]: value for i, value in enumerate(data) if value["id"] in RealCard2EnvCard}
 
 class GameEnv(object):
 
@@ -216,8 +203,8 @@ class GameEnv(object):
     
     def get_scores(self):
         return self.scores
-    # MYWEN
-    def step(self):
+
+    def step(self): # MYWEN
         # print ("MYWEN", self.acting_player_position)
         # print ("MYWEN", self.round, self.game_infoset.legal_actions)
         # print ("MYWEN", self.info_sets[self.acting_player_position].player_hand_cards)
@@ -391,6 +378,8 @@ class GameEnv(object):
             self.three_landlord_cards
         self.info_sets[self.acting_player_position].card_play_action_seq = \
             self.card_play_action_seq
+        self.info_sets[self.acting_player_position].played_actions = \
+            self.played_actions[self.acting_player_position]
 
         self.info_sets[
             self.acting_player_position].all_handcards = \
@@ -400,13 +389,28 @@ class GameEnv(object):
         return deepcopy(self.info_sets[self.acting_player_position])
 
     def cardClassification(self, action):
+        CardTypeToIndex = {
+            "spell": 0,
+            "aoe_spell": 1,
+            "minion": 2,
+            "minion_with_burst": 3,
+            "minion_increase_spell_power": 4
+        }
         result = [0] * len(CardTypeToIndex)
         for card in action:
-            cardId = HearthStone[card]["cardId"]
+            cardId = HearthStone[card]["id"]
             type = HearthStone[card]["type"]
-            for key in CardTypeToIndex.keys():
-                if key in type:
-                    result[CardTypeToIndex[key]] += 1
+            text = HearthStone[card]["text"]
+            if type == "MINION":
+                if "法术迸发" in text:
+                    result[CardTypeToIndex["minion_with_burst"]] += 1
+                if "法术伤害+" in text:
+                    result[CardTypeToIndex["minion_increase_spell_power"]] += 1
+                result[CardTypeToIndex["minion"]] += 1
+            elif type == "SPELL":
+                if "对所有敌方随从造成" in text:
+                    result[CardTypeToIndex["aoe_spell"]] += 1
+                result[CardTypeToIndex["spell"]] += 1
         return result
     
     def spellPowerIncrease(self, action): # increase many times
@@ -449,6 +453,8 @@ class InfoSet(object):
         self.last_move_dict = None
         # The played cands so far. It is a list.
         self.played_cards = None
+        # The played actions so far. It is a list.
+        self.played_actions = None
         # The hand cards of all the players. It is a dict. 
         self.all_handcards = None
         # Last player position that plays a valid move, i.e., not `pass`

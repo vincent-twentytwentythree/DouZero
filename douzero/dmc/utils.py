@@ -79,15 +79,14 @@ def create_buffers(flags, device_iterator):
     for device in device_iterator:
         buffers[device] = {}
         for position in positions:
-            # MYWEN
-            x_dim = 144
+            x_dim = 150 # MYWEN
             specs = dict(
                 done=dict(size=(T,), dtype=torch.bool),
                 episode_return=dict(size=(T,), dtype=torch.float32),
                 target=dict(size=(T,), dtype=torch.float32),
                 obs_x_no_action=dict(size=(T, x_dim), dtype=torch.int8),
-                obs_action=dict(size=(T, 60), dtype=torch.int8),
-                obs_z=dict(size=(T, 5, 120), dtype=torch.int8),
+                obs_action=dict(size=(T, 62), dtype=torch.int8), # MYWEN
+                obs_z=dict(size=(T, 5, 126), dtype=torch.int8), # MYWEN
             )
             _buffers: Buffers = {key: [] for key in specs}
             for _ in range(flags.num_buffers):
@@ -118,8 +117,7 @@ def create_buffers(flags, device_iterator):
 #         position: queue size of num_buffers
 #     }
 # }
-# MYWEN
-def act(i, device, free_queue, full_queue, model, buffers, flags, lock):
+def act(i, device, free_queue, full_queue, model, buffers, flags, lock): # MYWEN
     """
     This function will run forever until we stop it. It will generate
     data from the environment and send the data to buffer. It uses
@@ -149,7 +147,7 @@ def act(i, device, free_queue, full_queue, model, buffers, flags, lock):
         size = {p: 0 for p in positions}
 
         position, obs, env_output = env.initial()
-
+        deckCardBatch = []
         while True:
             while True:
                 obs_x_no_action_buf[position].append(env_output['obs_x_no_action'])
@@ -164,10 +162,13 @@ def act(i, device, free_queue, full_queue, model, buffers, flags, lock):
                 position, obs, env_output = env.step(action)
                 if env_output['done']:
                     if env_output['episode_return'] <= -20:
-                        with lock:
-                            deckCards = env.getDeckCards()
-                            with open("outputDeckCards.txt", "a") as file:
-                                file.write(", ".join(map(str, deckCards)) + "\n")
+                        deckCardBatch.append(env.getDeckCards())
+                        if len(deckCardBatch) > 20:
+                            with lock:
+                                with open("outputDeckCards.txt", "a") as file:
+                                    for deckCard in deckCardBatch:
+                                        file.write(", ".join(map(str, deckCard)) + "\n")
+                                deckCardBatch = []
                     for p in positions:
                         diff = size[p] - len(target_buf[p])
                         if diff > 0:

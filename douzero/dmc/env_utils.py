@@ -65,8 +65,7 @@ class Environment:
             obs_z=z,
             )
         
-    # MYWEN
-    def step(self, action):
+    def step(self, action): #MYWEN
         obs, reward, done, _ = self.env.step(action)
 
         self.episode_return += reward

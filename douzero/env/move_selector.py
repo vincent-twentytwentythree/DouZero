@@ -6,7 +6,7 @@ def filter_hearth_stone(moves, crystal, hearthStone, rival_num_on_battlefield, c
     for move in moves:
         cost = 0
         for card in move:
-            cardId = hearthStone[card]["cardId"]
+            cardId = hearthStone[card]["id"]
             if cardId == "GDB_320":
                 cost += max(0, hearthStone[card]["cost"] - rival_num_on_battlefield)
             else:
@@ -18,7 +18,7 @@ def filter_hearth_stone(moves, crystal, hearthStone, rival_num_on_battlefield, c
 def calculateScore(action, hearthStone, rival_num_on_battlefield, companion_num_on_battlefield, hands_num):
     score = 0
     for card in action:
-        cardId = hearthStone[card]["cardId"]
+        cardId = hearthStone[card]["id"]
         if cardId.startswith("VAC_323"): # 麦芽岩浆
             score += min(hearthStone[card]["cost"], rival_num_on_battlefield)
         elif cardId.startswith("GDB_445"): # 陨石风暴
@@ -29,7 +29,7 @@ def calculateScore(action, hearthStone, rival_num_on_battlefield, companion_num_
     # 法强+1
     power_plus_count = len([card for card in action if "minion_increase_spell_power" in hearthStone[card]["type"] ])
     for card in action:
-        cardId = hearthStone[card]["cardId"]
+        cardId = hearthStone[card]["id"]
         if cardId == "TOY_508": # 立体书
             score += power_plus_count
         elif cardId.startswith("VAC_323"): # 麦芽岩浆
@@ -40,7 +40,7 @@ def calculateScore(action, hearthStone, rival_num_on_battlefield, companion_num_
     # 法术迸发
     spell_count = len([card for card in action if hearthStone[card]["type"].endswith("spell") ])
     for card in action:
-        cardId = hearthStone[card]["cardId"]
+        cardId = hearthStone[card]["id"]
         if cardId == "GDB_434" and spell_count > 0: # 流彩巨岩
             score += 3
         elif cardId == "GDB_310" and spell_count > 0: # 虚灵神谕者
@@ -48,7 +48,7 @@ def calculateScore(action, hearthStone, rival_num_on_battlefield, companion_num_
 
     # 其他特殊效果
     for card in action:
-        cardId = hearthStone[card]["cardId"]
+        cardId = hearthStone[card]["id"]
         if cardId == "CS3_034": # 织法者玛里苟斯
             score += 10 - (hands_num - len(action))
         elif cardId == "VAC_321": # 伊辛迪奥斯
@@ -60,7 +60,7 @@ def calculateScore(action, hearthStone, rival_num_on_battlefield, companion_num_
 def newCards(action, hearthStone, hands_num):
     count = 1
     for card in action:
-        cardId = hearthStone[card]["cardId"]
+        cardId = hearthStone[card]["id"]
         if cardId == "GDB_310": # 虚灵神谕者
             spell_count = len([card for card in action if hearthStone[card]["type"].endswith("spell")])
             if spell_count > 0:

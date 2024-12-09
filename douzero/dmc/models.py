@@ -13,9 +13,8 @@ from .env_utils import getDevice
 class LandlordLstmModel(nn.Module):
     def __init__(self):
         super().__init__()
-        # MYWEN
-        self.lstm = nn.LSTM(120, 128, batch_first=True)
-        self.dense1 = nn.Linear(4 * 40 + 2 * 7 + 3 * 10 + 128, 512)
+        self.lstm = nn.LSTM(126, 128, batch_first=True) # MYWEN
+        self.dense1 = nn.Linear(4 * 42 + 2 * 7 + 3 * 10 + 128, 512) # MYWEN
         self.dense2 = nn.Linear(512, 512)
         self.dense3 = nn.Linear(512, 512)
         self.dense4 = nn.Linear(512, 512)

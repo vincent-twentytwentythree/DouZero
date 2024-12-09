@@ -351,6 +351,8 @@ class GameEnv(object):
             self.acting_player_position].minion_be_bursted = []
         self.info_sets[
             self.acting_player_position].spell_power_increased = []
+        self.info_sets[
+            self.acting_player_position].advice = []
 
         for action in self.info_sets[self.acting_player_position].legal_actions:
             self.info_sets[
@@ -359,6 +361,9 @@ class GameEnv(object):
                 self.acting_player_position].minion_be_bursted.append(self.minionBeBursted(action))
             self.info_sets[
                 self.acting_player_position].spell_power_increased.append(self.spellPowerIncrease(action))
+            self.info_sets[
+                self.acting_player_position].advice.append(min(9, ms.calculateScore(action, HearthStone, self.rival_num_on_battlefield, self.companion_num_on_battlefield, len(self.info_sets[
+                    self.acting_player_position].player_hand_cards)) // 3))
 
         self.info_sets[
             self.acting_player_position].bomb_num = self.bomb_num
@@ -485,6 +490,8 @@ class InfoSet(object):
         self.spell_power_increased = None
         # minion_be_bursted num this round
         self.minion_be_bursted = None
+        # advice, totaly 10 level
+        self.advice = None
 
         # card count by type: list size of 5
         # spell num

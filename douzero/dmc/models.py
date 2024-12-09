@@ -14,7 +14,7 @@ class LandlordLstmModel(nn.Module):
     def __init__(self):
         super().__init__()
         self.lstm = nn.LSTM(126, 128, batch_first=True) # MYWEN
-        self.dense1 = nn.Linear(4 * 42 + 2 * 7 + 3 * 10 + 128, 512) # MYWEN
+        self.dense1 = nn.Linear(4 * 42 + 2 * 7 + 4 * 10 + 128, 512) # MYWEN
         self.dense2 = nn.Linear(512, 512)
         self.dense3 = nn.Linear(512, 512)
         self.dense4 = nn.Linear(512, 512)

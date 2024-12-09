@@ -85,7 +85,7 @@ def create_buffers(flags, device_iterator):
                 episode_return=dict(size=(T,), dtype=torch.float32),
                 target=dict(size=(T,), dtype=torch.float32),
                 obs_x_no_action=dict(size=(T, x_dim), dtype=torch.int8),
-                obs_action=dict(size=(T, 62), dtype=torch.int8), # MYWEN
+                obs_action=dict(size=(T, 72), dtype=torch.int8), # MYWEN
                 obs_z=dict(size=(T, 5, 126), dtype=torch.int8), # MYWEN
             )
             _buffers: Buffers = {key: [] for key in specs}
@@ -220,6 +220,7 @@ def _cards2tensor(other_details, list_cards):
     matrix = np.hstack((
         _get_one_hot_array(other_details[0], 10),
         _get_one_hot_array(other_details[1], 10),
+        _get_one_hot_array(other_details[2], 10),
         _cards2array(list_cards)
     ))
     matrix = torch.from_numpy(matrix)

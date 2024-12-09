@@ -314,12 +314,16 @@ def _get_obs_landlord(infoset): # MYWEN obs details
     my_action_batch = np.zeros(my_handcards_batch.shape)
     minion_be_bursted_batch = np.zeros(my_handcards_left_batch.shape)
     spell_power_increased_batch = np.zeros(my_handcards_left_batch.shape)
+    advice_batch = np.zeros(my_handcards_left_batch.shape)
     other_details = []
     for j, action in enumerate(infoset.legal_actions):
         my_action_batch[j, :] = _cards2array(action)
         minion_be_bursted_batch[j,:] = _get_one_hot_array(infoset.minion_be_bursted[j], 10)
         spell_power_increased_batch[j,:] = _get_one_hot_array(infoset.spell_power_increased[j], 10)
-        other_details.append([infoset.minion_be_bursted[j], infoset.spell_power_increased[j]])
+        advice_batch[j,:] = _get_one_hot_array(infoset.advice[j], 10)
+        other_details.append([infoset.minion_be_bursted[j], infoset.spell_power_increased[j], infoset.advice[j]])
+        if (infoset.advice[j] // 3 >= 10):
+            print (action, infoset.advice[j])
 
     x_batch = np.hstack((my_handcards_batch, # 42
                          player_deck_cards_batch, # 42
@@ -329,6 +333,7 @@ def _get_obs_landlord(infoset): # MYWEN obs details
                          rivals_left_batch, # 7
                          minion_be_bursted_batch, # 10
                          spell_power_increased_batch, # 10
+                         advice_batch, # 10
                          my_action_batch)) # 42
     x_no_action = np.hstack((my_handcards,
                             player_deck_cards,

@@ -92,3 +92,6 @@ class Environment:
 
     def getDeckCards(self):
         return self.deck_cards
+    
+    def getMockActionIndex(self):
+        return self.env.getMockActionIndex()

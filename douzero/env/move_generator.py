@@ -16,6 +16,6 @@ class MovesGener(object):
     # generate all possible moves from given cards
     def gen_moves(self):
         all_combinations = []
-        for r in range(1, len(self.cards_list) + 1):
+        for r in range(0, len(self.cards_list) + 1):
             all_combinations.extend([list(tup) for tup in combinations(self.cards_list, r)])
         return all_combinations

@@ -14,7 +14,7 @@ class LandlordLstmModel(nn.Module):
     def __init__(self):
         super().__init__()
         self.lstm = nn.LSTM(126, 128, batch_first=True) # MYWEN
-        self.dense1 = nn.Linear(4 * 42 + 2 * 7 + 4 * 10 + 128, 512) # MYWEN
+        self.dense1 = nn.Linear(4 * 42 + 6 * 7 + 2 * 10 + 128, 512) # MYWEN
         self.dense2 = nn.Linear(512, 512)
         self.dense3 = nn.Linear(512, 512)
         self.dense4 = nn.Linear(512, 512)
@@ -108,7 +108,7 @@ class Model:
         device = getDevice(deviceName=device)
         self.models['landlord'] = LandlordLstmModel().to(device)
         self.models['second_hand'] = FarmerLstmModel().to(device)
-        self.models['pk_dp'] = RandomModel().to(device)
+        self.models['pk_dp'] = self.models['landlord'] # todo
 
     def forward(self, position, z, x, training=False, flags=None):
         model = self.models[position]

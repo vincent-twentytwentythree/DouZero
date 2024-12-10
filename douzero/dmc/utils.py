@@ -79,13 +79,13 @@ def create_buffers(flags, device_iterator):
     for device in device_iterator:
         buffers[device] = {}
         for position in positions:
-            x_dim = 150 # MYWEN
+            x_dim = 136 # MYWEN
             specs = dict(
                 done=dict(size=(T,), dtype=torch.bool),
                 episode_return=dict(size=(T,), dtype=torch.float32),
                 target=dict(size=(T,), dtype=torch.float32),
                 obs_x_no_action=dict(size=(T, x_dim), dtype=torch.int8),
-                obs_action=dict(size=(T, 72), dtype=torch.int8), # MYWEN
+                obs_action=dict(size=(T, 94), dtype=torch.int8), # MYWEN
                 obs_z=dict(size=(T, 5, 126), dtype=torch.int8), # MYWEN
             )
             _buffers: Buffers = {key: [] for key in specs}
@@ -123,7 +123,7 @@ def act(i, device, free_queue, full_queue, model, buffers, flags, lock): # MYWEN
     data from the environment and send the data to buffer. It uses
     a free queue and full queue to syncup with the main process.
     """
-    positions = ['landlord', 'second_hand', 'pk_dp']
+    positions = ['landlord', 'pk_dp']
     try:
         T = flags.unroll_length
         log.info('Device %s Actor %i started.', str(device), i)
@@ -152,9 +152,12 @@ def act(i, device, free_queue, full_queue, model, buffers, flags, lock): # MYWEN
             while True:
                 obs_x_no_action_buf[position].append(env_output['obs_x_no_action'])
                 obs_z_buf[position].append(env_output['obs_z'])
-                with torch.no_grad():
-                    agent_output = model.forward(position, obs['z_batch'], obs['x_batch'], flags=flags)
-                _action_idx = int(agent_output['action'].cpu().detach().numpy())
+                if position == "pk_dp":
+                    _action_idx = env.getMockActionIndex()
+                else:
+                    with torch.no_grad():
+                        agent_output = model.forward(position, obs['z_batch'], obs['x_batch'], flags=flags)
+                    _action_idx = int(agent_output['action'].cpu().detach().numpy())
                 action = obs['legal_actions'][_action_idx]
                 other_details = obs['other_details'][_action_idx]
                 obs_action_buf[position].append(_cards2tensor(other_details, action))
@@ -178,8 +181,7 @@ def act(i, device, free_queue, full_queue, model, buffers, flags, lock): # MYWEN
                             episode_return = env_output['episode_return'] if p == 'landlord' else -env_output['episode_return']
                             episode_return_buf[p].extend([0.0 for _ in range(diff-1)])
                             episode_return_buf[p].append(episode_return)
-                            target_buf[p].extend([0.0 for _ in range(4)])
-                            target_buf[p].extend([episode_return for _ in range(diff - 4)])
+                            target_buf[p].extend([episode_return for _ in range(diff)])
                     break
 
             for p in positions:
@@ -217,10 +219,14 @@ def _cards2tensor(other_details, list_cards):
     representation
     See Figure 2 in https://arxiv.org/pdf/2106.06135.pdf
     """
-    matrix = np.hstack((
-        _get_one_hot_array(other_details[0], 10),
-        _get_one_hot_array(other_details[1], 10),
-        _get_one_hot_array(other_details[2], 10),
+    matrix = np.hstack(( # mywen
+        _get_one_hot_array(other_details[0], 7),
+        _get_one_hot_array(other_details[1], 7),
+        _get_one_hot_array(other_details[2], 7),
+        _get_one_hot_array(other_details[3], 7),
+        _get_one_hot_array(other_details[4], 7),
+        _get_one_hot_array(other_details[5], 7),
+        _get_one_hot_array(other_details[6], 10),
         _cards2array(list_cards)
     ))
     matrix = torch.from_numpy(matrix)

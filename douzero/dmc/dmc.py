@@ -152,16 +152,14 @@ def train(flags):
             actor.start()
             actor_processes.append(actor)
 
-    def batch_and_learn(i, device, position, local_lock, position_lock, lock=threading.Lock()):
+    def batch_and_learn(i, device, position, get_data_device_locks, learn_model_position_lock, lock=threading.Lock()):
         """Thread target for the learning process."""
         nonlocal frames, position_frames, stats
         while frames < flags.total_frames:
             log.info("batch_and_learn start %d %d %s", i, device, position)
-            batch = get_batch(free_queue[device][position], full_queue[device][position], buffers[device][position], flags, local_lock)
-            if position != "landlord":
-                continue
+            batch = get_batch(free_queue[device][position], full_queue[device][position], buffers[device][position], flags, get_data_device_locks)
             _stats = learn(position, models, learner_model.get_model(position), batch, 
-                optimizers[position], flags, position_lock)
+                optimizers[position], flags, learn_model_position_lock)
 
             with lock:
                 for k in _stats:
@@ -180,16 +178,17 @@ def train(flags):
             free_queue[device]['pk_dp'].put(m)
 
     threads = []
-    locks = {}
+    get_data_device_locks = {}
     for device in device_iterator:
-        locks[device] = {'landlord': threading.Lock(), 'second_hand': threading.Lock(), 'pk_dp': threading.Lock()}
-    position_locks = {'landlord': threading.Lock(), 'second_hand': threading.Lock(), 'pk_dp': threading.Lock()}
+        get_data_device_locks[device] = {'landlord': threading.Lock(), 'second_hand': threading.Lock(), 'pk_dp': threading.Lock()}
+    # learn_model_position_locks = {'landlord': threading.Lock(), 'second_hand': threading.Lock(), 'pk_dp': threading.Lock()}
+    learn_model_position_locks = threading.Lock()
 
     for device in device_iterator:
         for i in range(flags.num_threads):
-            for position in ['landlord', 'second_hand', 'pk_dp']:
+            for position in ['landlord', 'pk_dp']:
                 thread = threading.Thread(
-                    target=batch_and_learn, name='batch-and-learn-%d' % i, args=(i,device,position,locks[device][position],position_locks[position]))
+                    target=batch_and_learn, name='batch-and-learn-%d' % i, args=(i,device,position,get_data_device_locks[device][position],learn_model_position_locks))
                 thread.start()
                 threads.append(thread)
     

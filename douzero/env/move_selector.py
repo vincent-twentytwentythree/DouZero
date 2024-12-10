@@ -5,17 +5,25 @@ def filter_hearth_stone(moves, crystal, hearthStone, rival_num_on_battlefield, c
     legal_moves = []
     for move in moves:
         cost = 0
+        minion = companion_num_on_battlefield
         for card in move:
             cardId = hearthStone[card]["id"]
-            if cardId == "GDB_320":
+            if cardId == "GDB_320": # 艾瑞达蛮兵
                 cost += max(0, hearthStone[card]["cost"] - rival_num_on_battlefield)
+            elif cardId == "GAME_005": # 硬币 todo
+                cost -= 1
             else:
                 cost += hearthStone[card]["cost"]
-        if cost <= crystal:
+            if hearthStone[card]["type"] == "MINION":
+                minion += 1
+        if cost <= crystal and minion <= 7:
             legal_moves.extend([move])
     return legal_moves
 
-def calculateScore(action, hearthStone, rival_num_on_battlefield, companion_num_on_battlefield, hands_num):
+def calculateScore(action, hearthStone, rival_num_on_battlefield, companion_num_on_battlefield,
+                   companion_with_power_inprove,
+                   companion_with_spell_burst,
+                   hands_num):
     score = 0
     for card in action:
         cardId = hearthStone[card]["id"]
@@ -27,7 +35,7 @@ def calculateScore(action, hearthStone, rival_num_on_battlefield, companion_num_
             score += hearthStone[card]["cost"]
 
     # 法强+1
-    power_plus_count = len([card for card in action if "法术伤害+" in hearthStone[card]["text"] ])
+    power_plus_count = len([card for card in action if "法术伤害+" in hearthStone[card]["text"] ]) + companion_with_power_inprove
     for card in action:
         cardId = hearthStone[card]["id"]
         if cardId == "TOY_508": # 立体书
@@ -35,16 +43,17 @@ def calculateScore(action, hearthStone, rival_num_on_battlefield, companion_num_
         elif cardId.startswith("VAC_323"): # 麦芽岩浆
             score += power_plus_count * rival_num_on_battlefield
         elif cardId.startswith("GDB_445"): # 陨石风暴
-            score += power_plus_count * (rival_num_on_battlefield - companion_num_on_battlefield)
+            score += companion_with_power_inprove * (rival_num_on_battlefield - companion_num_on_battlefield)
 
     # 法术迸发
-    spell_count = len([ card for card in action if hearthStone[card]["type"] == "SPELL" ])
+    whetherSpell = len([ card for card in action if hearthStone[card]["type"] == "SPELL" ]) > 0 # 硬币有什么不能触发 todo
+    score += whetherSpell * companion_with_spell_burst * 2 # hard code MYWEN
     for card in action:
         cardId = hearthStone[card]["id"]
-        if cardId == "GDB_434" and spell_count > 0: # 流彩巨岩
-            score += 3
-        elif cardId == "GDB_310" and spell_count > 0: # 虚灵神谕者
-            score += 2
+        if cardId == "GDB_434": # 流彩巨岩
+            score += 3 * whetherSpell
+        elif cardId == "GDB_310": # 虚灵神谕者
+            score += 2 * whetherSpell
 
     # 其他特殊效果
     for card in action:

@@ -4,6 +4,15 @@ from .move_generator import MovesGener
 import json
 import random
 
+CardTypeToIndex = {
+    "spell": 0,
+    "aoe_spell": 1,
+    "minion": 2,
+    "minion_with_burst": 3,
+    "minion_increase_spell_power": 4,
+    "rival_minion": 5
+}
+        
 CardSet = [ # size of 21
     # 0
     # 幸运币
@@ -132,7 +141,7 @@ class GameEnv(object):
                             '奇利亚斯豪华版3000型', '极紫外破坏者', '陨石风暴', '电击学徒', '虚灵神谕者', '麦芽岩浆', \
                             '陨石风暴', '流彩巨岩', '消融元素', '水宝宝鱼人', '伊辛迪奥斯', '月石重拳手', '电击学徒', \
                             '“焦油泥浆怪', ' 针岩图腾', '“焦油泥浆怪', '三角测量'] # MYWEN
-        card_play_data['landlord'] = [12, 15, 4, 8, 3, 6, 16, 16, 9, 18, 5, 8, 11, 2, 9, 17, 10, 6, 18, 17, 4, 5, 12, 1, 11, 10, 15]
+        # card_play_data['landlord'] = [12, 15, 4, 8, 3, 6, 16, 16, 9, 18, 5, 8, 11, 2, 9, 17, 10, 6, 18, 17, 4, 5, 12, 1, 11, 10, 15]
         self.info_sets['landlord'].player_hand_cards = []
         self.info_sets['landlord'].player_deck_cards = []
 
@@ -160,8 +169,26 @@ class GameEnv(object):
         self.deck_cards.extend(self.info_sets['landlord'].player_deck_cards)
         self.get_acting_player_position()
         
-        self.rival_num_on_battlefield = 0
-        self.companion_num_on_battlefield = 0
+        self.rival_num_on_battlefield = {
+            'landlord': 0,
+            'second_hand': 0,
+            'pk_dp': 0,
+            }
+        self.companion_num_on_battlefield = {
+            'landlord': 0,
+            'second_hand': 0,
+            'pk_dp': 0,
+            }
+        self.companion_with_power_inprove = {
+            'landlord': 0,
+            'second_hand': 0,
+            'pk_dp': 0,
+            }
+        self.companion_with_spell_burst = {
+            'landlord': 0,
+            'second_hand': 0,
+            'pk_dp': 0,
+            }
 
         self.round = 1
         self.scores = {
@@ -211,25 +238,38 @@ class GameEnv(object):
     
     def get_scores(self):
         return self.scores
+    
+    def getMockActionIndex(self):
+        scoreMax = 0
+        actionMaxIndex = 0
+        for index, action in enumerate(self.game_infoset.legal_actions):
+            score = self.calculateScore(action)
+            if score > scoreMax:
+                scoreMax = score
+                actionMaxIndex = index
+        return actionMaxIndex
 
-    def step(self): # MYWEN
+    def filter_hearth_stone(self, all_moves):
+        overload = len([card for card in self.get_last_move() if HearthStone[card]["id"] == "CS3_007"]) # MYWEN
+        return ms.filter_hearth_stone(all_moves, min(10, self.round) - overload, HearthStone,
+                                 self.rival_num_on_battlefield[self.acting_player_position],
+                                 self.companion_num_on_battlefield[self.acting_player_position],
+                                 )
+
+    def calculateScore(self, action):
+        return ms.calculateScore(action, HearthStone,
+                                 self.rival_num_on_battlefield[self.acting_player_position],
+                                 self.companion_num_on_battlefield[self.acting_player_position],
+                                 self.companion_with_power_inprove[self.acting_player_position],
+                                 self.companion_with_spell_burst[self.acting_player_position],
+                                 len(self.info_sets[self.acting_player_position].player_hand_cards))
+    def step(self): # MYWEN todo
         # print ("MYWEN", self.acting_player_position)
         # print ("MYWEN", self.round, self.game_infoset.legal_actions)
         # print ("MYWEN", self.info_sets[self.acting_player_position].player_hand_cards)
-        if self.acting_player_position == 'pk_dp':
-            scoreMax = 0
-            actionMax = []
-            for actionTmp in self.game_infoset.legal_actions:
-                score = ms.calculateScore(actionTmp, HearthStone, self.rival_num_on_battlefield, self.companion_num_on_battlefield, len(self.info_sets[
-                    self.acting_player_position].player_hand_cards))
-                if score > scoreMax:
-                    scoreMax = score
-                    actionMax = actionTmp
-            action = actionMax
-        else:
-            action = self.players[self.acting_player_position].act(
-                self.game_infoset)
-            assert action in self.game_infoset.legal_actions
+        action = self.players[self.acting_player_position].act(
+            self.game_infoset)
+        assert action in self.game_infoset.legal_actions
 
         if len(action) > 0:
             self.last_pid = self.acting_player_position
@@ -237,8 +277,7 @@ class GameEnv(object):
         self.last_move_dict[
             self.acting_player_position] = action.copy()
 
-        score_of_action = ms.calculateScore(action, HearthStone, self.rival_num_on_battlefield, self.companion_num_on_battlefield, len(self.info_sets[
-                    self.acting_player_position].player_hand_cards))
+        score_of_action = self.calculateScore(action)
         self.scores[self.acting_player_position] += score_of_action
         
         self.card_play_action_seq.append(action)
@@ -248,9 +287,16 @@ class GameEnv(object):
         self.played_actions[self.acting_player_position].append(action)
         self.scores_of_each_actions[self.acting_player_position].extend([score_of_action])
 
+        rival_action = self.card_play_action_seq[-2] if len(self.card_play_action_seq) >= 2 else []
+        rivalCardByType = self.cardClassification(rival_action)
+        cardByType = self.cardClassification(action)
+        self.rival_num_on_battlefield[self.acting_player_position] = random.randint(0, rivalCardByType[CardTypeToIndex["minion"]])
+        self.companion_num_on_battlefield[self.acting_player_position] = random.randint(0, cardByType[CardTypeToIndex["minion"]])
+        self.companion_with_power_inprove[self.acting_player_position] = random.randint(0, min(self.companion_num_on_battlefield[self.acting_player_position], cardByType[CardTypeToIndex["minion_increase_spell_power"]]))
+        self.companion_with_spell_burst[self.acting_player_position] = random.randint(0, min(self.companion_num_on_battlefield[self.acting_player_position] - self.companion_with_power_inprove[self.acting_player_position],
+                                                                                             cardByType[CardTypeToIndex["minion_with_burst"]]))
+        
         if self.acting_player_position == "pk_dp":
-            self.rival_num_on_battlefield = random.randint(1, min(self.round - 1, 7)) if self.round > 1 else 0
-            self.companion_num_on_battlefield = random.randint(1, min(self.round - 1, 7)) if self.round > 1 else 0
             self.round += 1
         self.game_done()
         if not self.game_over:
@@ -259,8 +305,8 @@ class GameEnv(object):
     
     def get_last_move(self):
         last_move = []
-        if len(self.card_play_action_seq) >= 2:
-                last_move = self.card_play_action_seq[-2]
+        if len(self.card_play_action_seq) >= 3:
+                last_move = self.card_play_action_seq[-3]
         return last_move
 
     def get_acting_player_position(self):
@@ -283,15 +329,14 @@ class GameEnv(object):
             if len(player_hand_cards) < 10:
                 player_hand_cards.extend([card])
         self.info_sets[self.acting_player_position].player_deck_cards = player_deck_cards[count:]
-
+    
     def get_legal_card_play_actions(self):
         mg = MovesGener(
             self.info_sets[self.acting_player_position].player_hand_cards)
 
         all_moves = mg.gen_moves()
 
-        overload = len([card for card in self.get_last_move() if card == 19])
-        moves = ms.filter_hearth_stone(all_moves, min(10, self.round) - overload, HearthStone, self.rival_num_on_battlefield, self.companion_num_on_battlefield)
+        moves = self.filter_hearth_stone(all_moves)
         moves = moves + [[]]
 
         for m in moves:
@@ -348,22 +393,13 @@ class GameEnv(object):
         self.info_sets[
             self.acting_player_position].card_count_by_type = []
         self.info_sets[
-            self.acting_player_position].minion_be_bursted = []
-        self.info_sets[
-            self.acting_player_position].spell_power_increased = []
-        self.info_sets[
             self.acting_player_position].advice = []
 
         for action in self.info_sets[self.acting_player_position].legal_actions:
             self.info_sets[
                 self.acting_player_position].card_count_by_type.append(self.cardClassification(action))
             self.info_sets[
-                self.acting_player_position].minion_be_bursted.append(self.minionBeBursted(action))
-            self.info_sets[
-                self.acting_player_position].spell_power_increased.append(self.spellPowerIncrease(action))
-            self.info_sets[
-                self.acting_player_position].advice.append(min(9, ms.calculateScore(action, HearthStone, self.rival_num_on_battlefield, self.companion_num_on_battlefield, len(self.info_sets[
-                    self.acting_player_position].player_hand_cards)) // 3))
+                self.acting_player_position].advice.append(min(9, self.calculateScore(action) // 3))
 
         self.info_sets[
             self.acting_player_position].bomb_num = self.bomb_num
@@ -375,10 +411,16 @@ class GameEnv(object):
             self.acting_player_position].last_move_dict = self.last_move_dict
         
         self.info_sets[
-            self.acting_player_position].rival_num_on_battlefield = self.rival_num_on_battlefield
+            self.acting_player_position].rival_num_on_battlefield = self.rival_num_on_battlefield[self.acting_player_position]
         
         self.info_sets[
-            self.acting_player_position].companion_num_on_battlefield = self.companion_num_on_battlefield
+            self.acting_player_position].companion_num_on_battlefield = self.companion_num_on_battlefield[self.acting_player_position]
+        
+        self.info_sets[
+            self.acting_player_position].companion_with_power_inprove = self.companion_with_power_inprove[self.acting_player_position]
+        
+        self.info_sets[
+            self.acting_player_position].companion_with_spell_burst = self.companion_with_spell_burst[self.acting_player_position]
 
         self.info_sets[self.acting_player_position].num_cards_left_dict = \
             {pos: len(self.info_sets[pos].player_hand_cards)
@@ -411,13 +453,6 @@ class GameEnv(object):
         return deepcopy(self.info_sets[self.acting_player_position])
 
     def cardClassification(self, action):
-        CardTypeToIndex = {
-            "spell": 0,
-            "aoe_spell": 1,
-            "minion": 2,
-            "minion_with_burst": 3,
-            "minion_increase_spell_power": 4
-        }
         result = [0] * len(CardTypeToIndex)
         for card in action:
             cardId = HearthStone[card]["id"]
@@ -434,13 +469,6 @@ class GameEnv(object):
                     result[CardTypeToIndex["aoe_spell"]] += 1
                 result[CardTypeToIndex["spell"]] += 1
         return result
-    
-    def spellPowerIncrease(self, action): # increase many times
-        return len([card for card in action if "法术伤害+" in HearthStone[card]["text"]]) * \
-        len([card for card in action if HearthStone[card]["type"] == "SPELL" ])
-    
-    def minionBeBursted(self, action): # only burst once
-        return len([ card for card in action if "法术迸发" in HearthStone[card]["text"] ]) * 2 # MYWEN todo hard code each burst value 2
 
 class InfoSet(object):
     """
@@ -486,10 +514,10 @@ class InfoSet(object):
         self.rival_num_on_battlefield = None
         # companion num
         self.companion_num_on_battlefield = None
-        # spell will be increased num this round
-        self.spell_power_increased = None
-        # minion_be_bursted num this round
-        self.minion_be_bursted = None
+        # companion_with_power_inprove this round
+        self.companion_with_power_inprove = None
+        # companion_with_spell_burst this round
+        self.companion_with_spell_burst = None
         # advice, totaly 10 level
         self.advice = None
 

@@ -12,6 +12,8 @@ def filter_hearth_stone(moves, crystal, hearthStone, rival_num_on_battlefield, c
                 cost += max(0, hearthStone[card]["cost"] - rival_num_on_battlefield)
             elif cardId == "GAME_005": # 硬币 todo
                 cost -= 1
+            elif cardId == "TOY_330t11": # 奇利亚斯需要特殊算费用
+                cost += 9
             else:
                 cost += hearthStone[card]["cost"]
             if hearthStone[card]["type"] == "MINION":
@@ -31,6 +33,8 @@ def calculateScore(action, hearthStone, rival_num_on_battlefield, companion_num_
             score += min(hearthStone[card]["cost"], rival_num_on_battlefield)
         elif cardId.startswith("GDB_445"): # 陨石风暴
             score += hearthStone[card]["cost"] + (rival_num_on_battlefield - companion_num_on_battlefield)
+        elif cardId == "TOY_330t11": # 奇利亚斯需要特殊算费用
+            score += 9
         else:
             score += hearthStone[card]["cost"]
 

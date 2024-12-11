@@ -107,6 +107,10 @@ class GameEnv(object):
                         'second_hand': [],
                         'pk_dp': []}
 
+        self.cost_of_each_actions = {'landlord': [],
+                        'second_hand': [],
+                        'pk_dp': []}
+        
         self.last_move = []
         self.last_two_moves = []
 
@@ -133,15 +137,8 @@ class GameEnv(object):
 
     def getDeckCards(self):
         return self.deck_cards
-
-    def card_play_init(self, card_play_data):
-        
-        cardSetForTest = ['水宝宝鱼人', '三角测量', '流彩巨岩', '艾瑞达蛮兵', '织法者玛里苟斯', '虚灵神谕者', \
-                           '立体书', '立体书', '极紫外破坏者', '麦芽岩浆', '消融元素', '艾瑞达蛮兵', '月石重拳手', \
-                            '奇利亚斯豪华版3000型', '极紫外破坏者', '陨石风暴', '电击学徒', '虚灵神谕者', '麦芽岩浆', \
-                            '陨石风暴', '流彩巨岩', '消融元素', '水宝宝鱼人', '伊辛迪奥斯', '月石重拳手', '电击学徒', \
-                            '“焦油泥浆怪', ' 针岩图腾', '“焦油泥浆怪', '三角测量'] # MYWEN
-        # card_play_data['landlord'] = [12, 15, 4, 8, 3, 6, 16, 16, 9, 18, 5, 8, 11, 2, 9, 17, 10, 6, 18, 17, 4, 5, 12, 1, 11, 10, 15]
+    
+    def getCardForFirstHand(self, card_play_data):
         self.info_sets['landlord'].player_hand_cards = []
         self.info_sets['landlord'].player_deck_cards = []
 
@@ -157,6 +154,34 @@ class GameEnv(object):
                 self.info_sets['landlord'].player_deck_cards.extend([card])
         self.info_sets['landlord'].player_deck_cards.extend(card_play_data['landlord'][6:])
 
+    def getCardForSecondHand(self, card_play_data):
+        self.info_sets['landlord'].player_hand_cards = []
+        self.info_sets['landlord'].player_deck_cards = []
+
+        for card in card_play_data['landlord'][:4]:
+            if HearthStone[card]["cost"] <= 2:
+                self.info_sets['landlord'].player_hand_cards.extend([card])
+            else:
+                self.info_sets['landlord'].player_deck_cards.extend([card])
+        for card in card_play_data['landlord'][4:8]:
+            if len(self.info_sets['landlord'].player_hand_cards) < 4:
+                self.info_sets['landlord'].player_hand_cards.extend([card])
+            else:
+                self.info_sets['landlord'].player_deck_cards.extend([card])
+        self.info_sets['landlord'].player_deck_cards.extend(card_play_data['landlord'][8:])
+        self.info_sets['landlord'].player_hand_cards.extend([0]) # coin
+        
+    def card_play_init(self, card_play_data):
+        
+        cardSetForTest = ['水宝宝鱼人', '三角测量', '流彩巨岩', '艾瑞达蛮兵', '织法者玛里苟斯', '虚灵神谕者', \
+                           '立体书', '立体书', '极紫外破坏者', '麦芽岩浆', '消融元素', '艾瑞达蛮兵', '月石重拳手', \
+                            '奇利亚斯豪华版3000型', '极紫外破坏者', '陨石风暴', '电击学徒', '虚灵神谕者', '麦芽岩浆', \
+                            '陨石风暴', '流彩巨岩', '消融元素', '水宝宝鱼人', '伊辛迪奥斯', '月石重拳手', '电击学徒', \
+                            '“焦油泥浆怪', ' 针岩图腾', '“焦油泥浆怪', '三角测量'] # MYWEN
+        # card_play_data['landlord'] = [12, 15, 4, 8, 3, 6, 16, 16, 9, 18, 5, 8, 11, 2, 9, 17, 10, 6, 18, 17, 4, 5, 12, 1, 11, 10, 15]
+
+        # self.getCardForFirstHand(card_play_data)
+        self.getCardForSecondHand(card_play_data)
 
         self.info_sets['pk_dp'].player_hand_cards = []
         self.info_sets['pk_dp'].player_deck_cards = []
@@ -217,12 +242,12 @@ class GameEnv(object):
         print ("MYWEN", self.scores["landlord"], self.scores["pk_dp"])
         round = 1
         for index, action in enumerate(self.played_actions["landlord"]):
-            print ("MYWEN landlord", round, [HearthStone[card]["name"] for card in action], self.scores_of_each_actions["landlord"][index])
+            print ("MYWEN landlord", round, [HearthStone[card]["name"] for card in action], self.scores_of_each_actions["landlord"][index], self.cost_of_each_actions["landlord"][index])
             round += 1
 
         round = 1
         for index, action in enumerate(self.played_actions["pk_dp"]):
-            print ("MYWEN pk_dp", round, [HearthStone[card]["name"] for card in action], self.scores_of_each_actions["pk_dp"][index])
+            print ("MYWEN pk_dp", round, [HearthStone[card]["name"] for card in action], self.scores_of_each_actions["pk_dp"][index], self.cost_of_each_actions["pk_dp"][index])
             round += 1
 
     def update_num_wins_scores(self):
@@ -257,12 +282,19 @@ class GameEnv(object):
                                  )
 
     def calculateScore(self, action):
-        return ms.calculateScore(action, HearthStone,
+        overload = len([card for card in self.get_last_move() if HearthStone[card]["id"] == "CS3_007"]) # MYWEN
+        return ms.calculateScore(action, min(10, self.round) - overload, HearthStone,
                                  self.rival_num_on_battlefield[self.acting_player_position],
                                  self.companion_num_on_battlefield[self.acting_player_position],
                                  self.companion_with_power_inprove[self.acting_player_position],
                                  self.companion_with_spell_burst[self.acting_player_position],
                                  len(self.info_sets[self.acting_player_position].player_hand_cards))
+        
+    def cost(self, action):
+        cost, _ = ms.calculateCost(action, HearthStone,
+                            self.rival_num_on_battlefield[self.acting_player_position],
+                            self.companion_num_on_battlefield[self.acting_player_position])
+        return cost
     def step(self): # MYWEN todo
         # print ("MYWEN", self.acting_player_position)
         # print ("MYWEN", self.round, self.game_infoset.legal_actions)
@@ -286,6 +318,8 @@ class GameEnv(object):
         self.played_cards[self.acting_player_position] += action
         self.played_actions[self.acting_player_position].append(action)
         self.scores_of_each_actions[self.acting_player_position].extend([score_of_action])
+        
+        self.cost_of_each_actions[self.acting_player_position].extend([self.cost(action)])
 
         rival_action = self.card_play_action_seq[-2] if len(self.card_play_action_seq) >= 2 else []
         rivalCardByType = self.cardClassification(rival_action)
@@ -370,6 +404,10 @@ class GameEnv(object):
                              'second_hand': [],
                              'pk_dp': []}
         self.scores_of_each_actions = {'landlord': [],
+                        'second_hand': [],
+                        'pk_dp': []}
+
+        self.cost_of_each_actions = {'landlord': [],
                         'second_hand': [],
                         'pk_dp': []}
         

@@ -323,7 +323,7 @@ class GameEnv(object):
             count = ms.newCards(action, HearthStone, len(player_hand_cards))
             for card in action:
                 player_hand_cards.remove(card)
-                if HearthStone[card]["id"] == "VAC_323":
+                if HearthStone[card]["id"] == "VAC_323": #todo 三角测量
                     player_hand_cards.append(RealCard2EnvCard["VAC_323t"])
                 elif HearthStone[card]["id"] == "VAC_323t":
                     player_hand_cards.append(RealCard2EnvCard["VAC_323t2"])

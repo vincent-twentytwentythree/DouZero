@@ -179,8 +179,8 @@ class GameEnv(object):
                             '“焦油泥浆怪', ' 针岩图腾', '“焦油泥浆怪', '三角测量'] # MYWEN
         # card_play_data['landlord'] = [12, 15, 4, 8, 3, 6, 16, 16, 9, 18, 5, 8, 11, 2, 9, 17, 10, 6, 18, 17, 4, 5, 12, 1, 11, 10, 15]
 
-        self.getCardForFirstHand(card_play_data)
-        # self.getCardForSecondHand(card_play_data)
+        # self.getCardForFirstHand(card_play_data)
+        self.getCardForSecondHand(card_play_data)
 
         self.info_sets['pk_dp'].player_hand_cards = []
         self.info_sets['pk_dp'].player_deck_cards = []

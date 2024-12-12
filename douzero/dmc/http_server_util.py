@@ -98,11 +98,27 @@ def get_infoset(position,
                                                         info_set.companion_num_on_battlefield,
                                                         info_set.companion_with_power_inprove,
                                                         info_set.companion_with_spell_burst,
-                                                        len(player_hand_cards)) // 3)) # todo
+                                                        len(info_set.player_hand_cards)) // 3)) # todo
     return info_set
 
 def toEnvCardList(cardList):
     return [RealCard2EnvCard[card] for card in cardList]
+
+def getMockActionIndex(info_set, crystal):
+    scoreMax = 0
+    actionMaxIndex = 0
+    for index, action in enumerate(info_set.legal_actions):
+        score = ms.calculateScore(action, crystal, HearthStone,
+                                                        info_set.rival_num_on_battlefield,
+                                                        info_set.companion_num_on_battlefield,
+                                                        info_set.companion_with_power_inprove,
+                                                        info_set.companion_with_spell_burst,
+                                                        len(info_set.player_hand_cards)
+                                )
+        if score > scoreMax:
+            scoreMax = score
+            actionMaxIndex = index
+    return actionMaxIndex
 
 def predict(model, requestBody, flags):
     position = requestBody.get("position")
@@ -123,13 +139,16 @@ def predict(model, requestBody, flags):
     obs = get_obs(info_set)
 
 
-    device = getDevice(deviceName=flags.training_device)
-    obs_x = torch.from_numpy(obs['x_batch']).to(device)
-    obs_z = torch.from_numpy(obs['z_batch']).to(device)
+    if position == "landlord":
+        device = getDevice(deviceName=flags.training_device)
+        obs_x = torch.from_numpy(obs['x_batch']).to(device)
+        obs_z = torch.from_numpy(obs['z_batch']).to(device)
 
-    with torch.no_grad():
-        agent_output = model.forward(position, obs_z, obs_x)
-    _action_idx = int(agent_output['action'].cpu().detach().numpy())
+        with torch.no_grad():
+            agent_output = model.forward(position, obs_z, obs_x)
+        _action_idx = int(agent_output['action'].cpu().detach().numpy())
+    else:
+        _action_idx = getMockActionIndex(info_set, crystal=crystal)
     action = obs['legal_actions'][_action_idx]
     cost, _ = ms.calculateActionCost(action, HearthStone, len(rival_battle_cards), len(companion_battle_cards))
     score = ms.calculateScore(action, crystal, HearthStone,

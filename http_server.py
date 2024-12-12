@@ -26,7 +26,7 @@ class MyHandler(BaseHTTPRequestHandler):
             print(f"responseBody: {responseBody}")
 
             # Send response
-            response = {"status": "success", "responseBody": responseBody}
+            response = {"status": "succ", "action": responseBody}
             self.send_response(200)  # HTTP status code
             self.send_header('Content-type', 'application/json')
             self.end_headers()

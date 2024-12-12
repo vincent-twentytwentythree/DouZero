@@ -5,7 +5,7 @@ import torch
 from .file_writer import FileWriter
 from .models import Model
 from .utils import log, getDevice
-from ..env.env import get_obs
+from ..env.env import get_obs, deck
 from ..env.game import InfoSet
 from ..env.move_generator import MovesGener
 from ..env import move_selector as ms
@@ -65,7 +65,9 @@ def get_infoset(position,
                 played_actions,
                 rival_battle_cards,
                 companion_battle_cards,
+                companion_burst_cards,
                 ):
+    
     info_set = InfoSet(position)
 
     info_set.legal_actions = get_legal_card_play_actions(crystal,
@@ -74,17 +76,28 @@ def get_infoset(position,
                                                          len(companion_battle_cards)
                                                          )
     info_set.player_hand_cards = player_hand_cards
-    info_set.player_deck_cards = player_deck_cards
+    if len(player_deck_cards) == 0:
+        _deck = deck.copy()
+        for card in player_hand_cards:
+            if card in _deck:
+                _deck.remove(card)
+        for card in [card for action in played_actions for card in action ]:
+            if card in _deck:
+                _deck.remove(card)
+        info_set.player_deck_cards = _deck
+    else:
+        info_set.player_deck_cards = player_deck_cards
     info_set.last_move = played_actions[-1] if len(played_actions) > 0 else []
 
     info_set.rival_num_on_battlefield = len(rival_battle_cards)
         
     info_set.companion_num_on_battlefield = len(companion_battle_cards)
 
-    companionBattleCardsByType = gameEnv.cardClassification(companion_battle_cards)
-    info_set.companion_with_power_inprove = companionBattleCardsByType[CardTypeToIndex["minion_increase_spell_power"]]
+    info_set.companion_with_power_inprove = len([cardId for cardId in companion_battle_cards if cardId == "GDB_310"
+                                                 or cardId == "CS3_007"
+                                                 or cardId == "CS2_052" ])
         
-    info_set.companion_with_spell_burst = companionBattleCardsByType[CardTypeToIndex["minion_with_burst"]]
+    info_set.companion_with_spell_burst = len(companion_burst_cards)
 
     info_set.played_actions = played_actions
 
@@ -128,13 +141,15 @@ def predict(model, requestBody, flags):
     played_actions = requestBody.get('played_actions', [])
     rival_battle_cards = requestBody.get('rival_battle_cards', [])
     companion_battle_cards = requestBody.get('companion_battle_cards', [])
+    companion_burst_cards = requestBody.get('companion_burst_cards', [])
     info_set = get_infoset(position,
                            crystal,
                            toEnvCardList(player_hand_cards),
                            toEnvCardList(player_deck_cards),
                            [toEnvCardList(action) for action in played_actions],
-                           toEnvCardList(rival_battle_cards),
-                           toEnvCardList(companion_battle_cards)
+                           rival_battle_cards,
+                           companion_battle_cards,
+                           companion_burst_cards
                         )
     obs = get_obs(info_set)
 
@@ -159,7 +174,7 @@ def predict(model, requestBody, flags):
                                                         len(player_hand_cards)
                             )
     realAction = [EnvCard2RealCard[card] for card in action]
-    print(f"handCards: {[HearthStone[card]["name"] for card in toEnvCardList(player_hand_cards)]} ")
-    print(f"deckCards: {[HearthStone[card]["name"] for card in toEnvCardList(player_deck_cards)]} ")
+    print(f"handCards: {[HearthStone[card]["name"] for card in info_set.player_hand_cards]} ")
+    print(f"deckCards: {[HearthStone[card]["name"] for card in info_set.player_deck_cards]} ")
     print(f"action: {[HearthStone[card]["name"] for card in action]}, cost: {cost}, score: {score} ")
     return realAction

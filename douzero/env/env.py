@@ -5,7 +5,12 @@ from douzero.env.game import GameEnv, HearthStone, CardTypeToIndex
 
 NumOnes2Array = {0: np.array([0, 0]),
                  1: np.array([1, 0]),
-                 2: np.array([1, 1])}
+                 2: np.array([1, 1]),
+                 3: np.array([1, 1]),
+                 4: np.array([1, 1]),
+                 5: np.array([1, 1]),
+                 6: np.array([1, 1]),
+                 }
 
 deck = []
 

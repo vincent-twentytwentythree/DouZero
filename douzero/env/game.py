@@ -291,7 +291,7 @@ class GameEnv(object):
                                  len(self.info_sets[self.acting_player_position].player_hand_cards))
         
     def cost(self, action):
-        cost, _ = ms.calculateCost(action, HearthStone,
+        cost, _ = ms.calculateActionCost(action, HearthStone,
                             self.rival_num_on_battlefield[self.acting_player_position],
                             self.companion_num_on_battlefield[self.acting_player_position])
         return cost
@@ -379,8 +379,8 @@ class GameEnv(object):
         moves = self.filter_hearth_stone(all_moves)
         moves = moves + [[]]
 
-        for m in moves:
-            m.sort()
+        # for m in moves:
+        #     m.sort()
 
         return moves
 

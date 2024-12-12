@@ -115,7 +115,7 @@ def get_infoset(position,
     return info_set
 
 def toEnvCardList(cardList):
-    return [RealCard2EnvCard[card] for card in cardList]
+    return [RealCard2EnvCard[card] for card in cardList if card in RealCard2EnvCard] # todo
 
 def getMockActionIndex(info_set, crystal):
     scoreMax = 0

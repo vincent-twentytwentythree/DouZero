@@ -14,7 +14,7 @@ from ..env.game import CardTypeToIndex, CardSet, RealCard2EnvCard, EnvCard2RealC
 
 from ..env.game import GameEnv
 
-gameEnv = GameEnv(None)
+gameEnv = GameEnv(None, None)
 
 def getModel(flags):
     if not flags.actor_device_cpu or flags.training_device != 'cpu':
@@ -25,22 +25,22 @@ def getModel(flags):
         xp_args=flags.__dict__,
         rootdir=flags.savedir,
     )
-    checkpointpath = os.path.expandvars(
-        os.path.expanduser('%s/%s/%s' % (flags.savedir, flags.xpid, 'model.tar')))
 
     # Learner model for training
     learner_model = Model(device=flags.training_device)
 
     # Load models if any
-    if flags.load_model and os.path.exists(checkpointpath):
-        device = getDevice(deviceName=flags.training_device)
-        checkpoint_states = torch.load(
-            checkpointpath, map_location=(device)
-        )
-        for k in ['landlord', 'second_hand', 'pk_dp']:
+    for k in ['landlord', 'second_hand']:
+        checkpointpath = os.path.expandvars(
+            os.path.expanduser('%s/%s/%s' % (flags.savedir, flags.xpid, k+'_model.tar')))
+        if flags.load_model and os.path.exists(checkpointpath):
+            device = getDevice(deviceName=flags.training_device)
+            checkpoint_states = torch.load(
+                checkpointpath, map_location=(device)
+            )
             learner_model.get_model(k).load_state_dict(checkpoint_states["model_state_dict"][k])
-        stats = checkpoint_states["stats"]
-        log.info(f"Resuming preempted job, current stats:\n{stats}")
+            stats = checkpoint_states["stats"]
+            log.info(f"Resuming preempted job, current stats:\n{stats}")
 
     return learner_model
 
@@ -154,7 +154,7 @@ def predict(model, requestBody, flags):
     obs = get_obs(info_set)
 
 
-    if position == "landlord":
+    if position != "pk_dp":
         device = getDevice(deviceName=flags.training_device)
         obs_x = torch.from_numpy(obs['x_batch']).to(device)
         obs_z = torch.from_numpy(obs['z_batch']).to(device)
@@ -174,7 +174,11 @@ def predict(model, requestBody, flags):
                                                         len(player_hand_cards)
                             )
     realAction = [EnvCard2RealCard[card] for card in action]
-    print(f"handCards: {[HearthStone[card]["name"] for card in info_set.player_hand_cards]} ")
-    print(f"deckCards: {[HearthStone[card]["name"] for card in info_set.player_deck_cards]} ")
-    print(f"action: {[HearthStone[card]["name"] for card in action]}, cost: {cost}, score: {score} ")
+    
+    handCards = [HearthStone[card]["name"] for card in info_set.player_hand_cards]
+    deckCards = [HearthStone[card]["name"] for card in info_set.player_deck_cards]
+    action = [HearthStone[card]["name"] for card in action]
+    print(f"handCards: {handCards} ")
+    print(f"deckCards: {deckCards} ")
+    print(f"action: {action}, cost: {cost}, score: {score} ")
     return realAction

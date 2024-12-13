@@ -28,8 +28,8 @@ log.setLevel(logging.INFO)
 Buffers = typing.Dict[str, typing.List[torch.Tensor]]
 
 # Environment -> Env -> GameEnv
-def create_env(flags):
-    return Env(flags.objective)
+def create_env(flags, training_mode):
+    return Env(flags.objective, training_mode)
 
 def get_batch(free_queue,
               full_queue,
@@ -51,11 +51,11 @@ def get_batch(free_queue,
         free_queue.put(m)
     return batch
 
-def create_optimizers(flags, learner_model):
+def create_optimizers(flags, learner_model, training_mode):
     """
     Create three optimizers for the three positions
     """
-    positions = ['landlord', 'second_hand', 'pk_dp']
+    positions = ['landlord', 'second_hand']
     optimizers = {}
     for position in positions:
         optimizer = torch.optim.RMSprop(
@@ -65,6 +65,7 @@ def create_optimizers(flags, learner_model):
             eps=flags.epsilon,
             alpha=flags.alpha)
         optimizers[position] = optimizer
+    optimizers['pk_dp'] = optimizers[training_mode]
     return optimizers
 
 def create_buffers(flags, device_iterator):
@@ -117,18 +118,18 @@ def create_buffers(flags, device_iterator):
 #         position: queue size of num_buffers
 #     }
 # }
-def act(i, device, free_queue, full_queue, model, buffers, flags, lock): # MYWEN
+def act(i, device, free_queue, full_queue, model, buffers, flags, training_mode, lock): # MYWEN
     """
     This function will run forever until we stop it. It will generate
     data from the environment and send the data to buffer. It uses
     a free queue and full queue to syncup with the main process.
     """
-    positions = ['landlord', 'pk_dp']
+    positions = [training_mode, 'pk_dp']
     try:
         T = flags.unroll_length
         log.info('Device %s Actor %i started.', str(device), i)
 
-        env = create_env(flags)
+        env = create_env(flags, training_mode)
         env = Environment(env, device)
 
         # done_buf: label actions whether game is down for each position
@@ -178,12 +179,11 @@ def act(i, device, free_queue, full_queue, model, buffers, flags, lock): # MYWEN
                             done_buf[p].extend([False for _ in range(diff-1)])
                             done_buf[p].append(True)
 
-                            episode_return = env_output['episode_return'] if p == 'landlord' else -env_output['episode_return']
+                            episode_return = env_output['episode_return'] if p == training_mode else -env_output['episode_return']
                             episode_return_buf[p].extend([0.0 for _ in range(diff-1)])
                             episode_return_buf[p].append(episode_return)
                             target_buf[p].extend([episode_return for _ in range(diff)])
                     break
-
             for p in positions:
                 while size[p] > T: 
                     index = free_queue[p].get()

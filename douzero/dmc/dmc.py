@@ -19,7 +19,10 @@ mean_episode_return_buf = {p:deque(maxlen=100) for p in ['landlord', 'second_han
 def compute_loss(logits, targets):
     loss = ((logits.squeeze(-1) - targets)**2).mean()
     return loss
-    
+
+# training_mode = "landlord"
+training_mode = 'second_hand'
+
 def learn(position,
           actor_models,
           model,
@@ -71,7 +74,7 @@ def train(flags):
         rootdir=flags.savedir,
     )
     checkpointpath = os.path.expandvars(
-        os.path.expanduser('%s/%s/%s' % (flags.savedir, flags.xpid, 'model.tar')))
+        os.path.expanduser('%s/%s/%s' % (flags.savedir, flags.xpid, training_mode + '_model.tar'))) # todo
 
     T = flags.unroll_length
     B = flags.batch_size
@@ -87,7 +90,7 @@ def train(flags):
     # Initialize actor models
     models = {}
     for device in device_iterator:
-        model = Model(device=device)
+        model = Model(device=device, training_mode=training_mode)
         model.share_memory()
         model.eval()
         models[device] = model
@@ -108,10 +111,10 @@ def train(flags):
         full_queue[device] = _full_queue
 
     # Learner model for training
-    learner_model = Model(device=flags.training_device)
+    learner_model = Model(device=flags.training_device, training_mode=training_mode)
 
     # Create optimizers
-    optimizers = create_optimizers(flags, learner_model)
+    optimizers = create_optimizers(flags, learner_model, training_mode)
 
     # Stat Keys
     stat_keys = [
@@ -131,7 +134,7 @@ def train(flags):
         checkpoint_states = torch.load(
             checkpointpath, map_location=(device)
         )
-        for k in ['landlord', 'second_hand', 'pk_dp']:
+        for k in ['pk_dp']:
             learner_model.get_model(k).load_state_dict(checkpoint_states["model_state_dict"][k])
             optimizers[k].load_state_dict(checkpoint_states["optimizer_state_dict"][k])
             for device in device_iterator:
@@ -148,7 +151,7 @@ def train(flags):
         for i in range(flags.num_actors):
             actor = ctx.Process(
                 target=act,
-                args=(i, device, free_queue[device], full_queue[device], models[device], buffers[device], flags, actor_lock))
+                args=(i, device, free_queue[device], full_queue[device], models[device], buffers[device], flags, training_mode, actor_lock))
             actor.start()
             actor_processes.append(actor)
 
@@ -160,7 +163,6 @@ def train(flags):
             batch = get_batch(free_queue[device][position], full_queue[device][position], buffers[device][position], flags, get_data_device_locks)
             _stats = learn(position, models, learner_model.get_model(position), batch, 
                 optimizers[position], flags, learn_model_position_lock)
-
             with lock:
                 for k in _stats:
                     stats[k] = _stats[k]
@@ -186,7 +188,7 @@ def train(flags):
 
     for device in device_iterator:
         for i in range(flags.num_threads):
-            for position in ['landlord', 'pk_dp']:
+            for position in [training_mode, 'pk_dp']:
                 thread = threading.Thread(
                     target=batch_and_learn, name='batch-and-learn-%d' % i, args=(i,device,position,get_data_device_locks[device][position],learn_model_position_locks))
                 thread.start()
@@ -207,10 +209,10 @@ def train(flags):
         }, checkpointpath)
 
         # Save the weights for evaluation purpose
-        for position in ['landlord', 'second_hand', 'pk_dp']:
-            model_weights_dir = os.path.expandvars(os.path.expanduser(
-                '%s/%s/%s' % (flags.savedir, flags.xpid, position+'_weights_'+str(frames)+'.ckpt')))
-            torch.save(learner_model.get_model(position).state_dict(), model_weights_dir)
+        # for position in [training_mode, 'pk_dp']:
+        #     model_weights_dir = os.path.expandvars(os.path.expanduser(
+        #         '%s/%s/%s' % (flags.savedir, flags.xpid, position+'_weights_'+training_mode+str(frames)+'.ckpt')))
+        #     torch.save(learner_model.get_model(position).state_dict(), model_weights_dir)
 
     fps_log = []
     timer = timeit.default_timer

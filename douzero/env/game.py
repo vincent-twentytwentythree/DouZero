@@ -3,6 +3,7 @@ from . import move_detector as md, move_selector as ms
 from .move_generator import MovesGener
 import json
 import random
+import numpy as np
 
 CardTypeToIndex = {
     "spell": 0,
@@ -79,7 +80,9 @@ with open("cards.json", "rb") as file:
 
 class GameEnv(object):
 
-    def __init__(self, players):
+    def __init__(self, players, training_mode):
+        
+        self.training_mode = training_mode # "landlord" or 'second_hand'
 
         self.card_play_action_seq = []
 
@@ -124,7 +127,7 @@ class GameEnv(object):
                          'pk_dp': InfoSet('pk_dp'),}
 
         self.bomb_num = 0
-        self.last_pid = 'landlord'
+        self.last_pid = self.training_mode
         self.round = 0
         self.scores = {
             'landlord': 0,
@@ -138,37 +141,45 @@ class GameEnv(object):
         return self.deck_cards
     
     def getCardForFirstHand(self, card_play_data):
-        self.info_sets['landlord'].player_hand_cards = []
-        self.info_sets['landlord'].player_deck_cards = []
+        self.info_sets[self.training_mode].player_hand_cards = []
+        self.info_sets[self.training_mode].player_deck_cards = []
 
-        for card in card_play_data['landlord'][:3]:
+        for card in card_play_data[self.training_mode][:3]:
             if HearthStone[card]["cost"] <= 2:
-                self.info_sets['landlord'].player_hand_cards.extend([card])
+                self.info_sets[self.training_mode].player_hand_cards.extend([card])
             else:
-                self.info_sets['landlord'].player_deck_cards.extend([card])
-        for card in card_play_data['landlord'][3:6]:
-            if len(self.info_sets['landlord'].player_hand_cards) < 3:
-                self.info_sets['landlord'].player_hand_cards.extend([card])
+                self.info_sets[self.training_mode].player_deck_cards.extend([card])
+        for card in card_play_data[self.training_mode][3:6]:
+            if len(self.info_sets[self.training_mode].player_hand_cards) < 3:
+                self.info_sets[self.training_mode].player_hand_cards.extend([card])
             else:
-                self.info_sets['landlord'].player_deck_cards.extend([card])
-        self.info_sets['landlord'].player_deck_cards.extend(card_play_data['landlord'][6:])
+                self.info_sets[self.training_mode].player_deck_cards.extend([card])
+        
+        self.info_sets[self.training_mode].player_hand_cards.extend(card_play_data[self.training_mode][6:7])
+        self.info_sets[self.training_mode].player_deck_cards.extend(card_play_data[self.training_mode][7:])
+        
+        np.random.shuffle(self.info_sets[self.training_mode].player_deck_cards)
 
     def getCardForSecondHand(self, card_play_data):
-        self.info_sets['landlord'].player_hand_cards = []
-        self.info_sets['landlord'].player_deck_cards = []
+        self.info_sets[self.training_mode].player_hand_cards = []
+        self.info_sets[self.training_mode].player_deck_cards = []
 
-        for card in card_play_data['landlord'][:4]:
+        for card in card_play_data[self.training_mode][:4]:
             if HearthStone[card]["cost"] <= 2:
-                self.info_sets['landlord'].player_hand_cards.extend([card])
+                self.info_sets[self.training_mode].player_hand_cards.extend([card])
             else:
-                self.info_sets['landlord'].player_deck_cards.extend([card])
-        for card in card_play_data['landlord'][4:8]:
-            if len(self.info_sets['landlord'].player_hand_cards) < 4:
-                self.info_sets['landlord'].player_hand_cards.extend([card])
+                self.info_sets[self.training_mode].player_deck_cards.extend([card])
+        for card in card_play_data[self.training_mode][4:8]:
+            if len(self.info_sets[self.training_mode].player_hand_cards) < 4:
+                self.info_sets[self.training_mode].player_hand_cards.extend([card])
             else:
-                self.info_sets['landlord'].player_deck_cards.extend([card])
-        self.info_sets['landlord'].player_deck_cards.extend(card_play_data['landlord'][8:])
-        self.info_sets['landlord'].player_hand_cards.extend([0]) # coin
+                self.info_sets[self.training_mode].player_deck_cards.extend([card])
+        
+        self.info_sets[self.training_mode].player_hand_cards.extend(card_play_data[self.training_mode][8:9])
+        self.info_sets[self.training_mode].player_deck_cards.extend(card_play_data[self.training_mode][9:])
+        self.info_sets[self.training_mode].player_hand_cards.extend([0]) # coin
+        
+        np.random.shuffle(self.info_sets[self.training_mode].player_deck_cards)
         
     def card_play_init(self, card_play_data):
         
@@ -177,20 +188,25 @@ class GameEnv(object):
                             '奇利亚斯豪华版3000型', '极紫外破坏者', '陨石风暴', '电击学徒', '虚灵神谕者', '麦芽岩浆', \
                             '陨石风暴', '流彩巨岩', '消融元素', '水宝宝鱼人', '伊辛迪奥斯', '月石重拳手', '电击学徒', \
                             '“焦油泥浆怪', ' 针岩图腾', '“焦油泥浆怪', '三角测量'] # MYWEN
-        # card_play_data['landlord'] = [12, 15, 4, 8, 3, 6, 16, 16, 9, 18, 5, 8, 11, 2, 9, 17, 10, 6, 18, 17, 4, 5, 12, 1, 11, 10, 15]
+        # card_play_data[self.training_mode] = [12, 15, 4, 8, 3, 6, 16, 16, 9, 18, 5, 8, 11, 2, 9, 17, 10, 6, 18, 17, 4, 5, 12, 1, 11, 10, 15]
 
-        # self.getCardForFirstHand(card_play_data)
-        self.getCardForSecondHand(card_play_data)
+        if self.training_mode == "landlord":
+            self.getCardForFirstHand(card_play_data)
+        elif self.training_mode == "second_hand":
+            self.getCardForSecondHand(card_play_data)
+        else:
+            raise Exception("mode not support")
 
         self.info_sets['pk_dp'].player_hand_cards = []
         self.info_sets['pk_dp'].player_deck_cards = []
-        self.info_sets['pk_dp'].player_hand_cards.extend(self.info_sets['landlord'].player_hand_cards)
-        self.info_sets['pk_dp'].player_deck_cards.extend(self.info_sets['landlord'].player_deck_cards)
+        self.info_sets['pk_dp'].player_hand_cards.extend(self.info_sets[self.training_mode].player_hand_cards)
+        self.info_sets['pk_dp'].player_deck_cards.extend(self.info_sets[self.training_mode].player_deck_cards)
 
         # for debug
         self.deck_cards = []
-        self.deck_cards.extend(self.info_sets['landlord'].player_hand_cards)
-        self.deck_cards.extend(self.info_sets['landlord'].player_deck_cards)
+        self.deck_cards.extend(self.info_sets[self.training_mode].player_hand_cards)
+        self.deck_cards.extend(self.info_sets[self.training_mode].player_deck_cards)
+        self.acting_player_position = None
         self.get_acting_player_position()
         
         self.rival_num_on_battlefield = {
@@ -224,10 +240,10 @@ class GameEnv(object):
 
     def game_done(self):
         if self.round > 14 or len(self.info_sets[self.acting_player_position].player_deck_cards) == 0 or \
-            abs(self.scores["landlord"] - self.scores["pk_dp"]) >= 30:
+            abs(self.scores[self.training_mode] - self.scores["pk_dp"]) >= 30:
             # if one of the three players discards his hand,
             # then game is over.
-            # if abs(self.scores["landlord"] - self.scores["pk_dp"]) < 5:
+            # if abs(self.scores[self.training_mode] - self.scores["pk_dp"]) < 5:
             # self.debug()
             self.update_num_wins_scores()
             self.game_over = True
@@ -238,10 +254,10 @@ class GameEnv(object):
     def debug(self): # MYWEN
         print ("MYWEN", self.deck_cards)
         print ("MYWEN", [HearthStone[card]["name"] for card in self.deck_cards])
-        print ("MYWEN", self.scores["landlord"], self.scores["pk_dp"])
+        print ("MYWEN", self.scores[self.training_mode], self.scores["pk_dp"])
         round = 1
-        for index, action in enumerate(self.played_actions["landlord"]):
-            print ("MYWEN landlord", round, [HearthStone[card]["name"] for card in action], self.scores_of_each_actions["landlord"][index], self.cost_of_each_actions["landlord"][index])
+        for index, action in enumerate(self.played_actions[self.training_mode]):
+            print ("MYWEN ", self.training_mode, round, [HearthStone[card]["name"] for card in action], self.scores_of_each_actions[self.training_mode][index], self.cost_of_each_actions[self.training_mode][index])
             round += 1
 
         round = 1
@@ -255,7 +271,7 @@ class GameEnv(object):
         self.num_scores['pk_dp'] = 0
 
     def get_winner(self):
-        return "landlord"
+        return self.training_mode
 
     def get_bomb_num(self):
         return 0
@@ -329,7 +345,9 @@ class GameEnv(object):
         self.companion_with_spell_burst[self.acting_player_position] = random.randint(0, min(self.companion_num_on_battlefield[self.acting_player_position] - self.companion_with_power_inprove[self.acting_player_position],
                                                                                              cardByType[CardTypeToIndex["minion_with_burst"]]))
         
-        if self.acting_player_position == "pk_dp":
+        if self.training_mode == "landlord" and self.acting_player_position == "pk_dp":
+            self.round += 1
+        elif self.training_mode == "second_hand" and self.acting_player_position == "second_hand":
             self.round += 1
         self.game_done()
         if not self.game_over:
@@ -343,10 +361,16 @@ class GameEnv(object):
         return last_move
 
     def get_acting_player_position(self):
-        if self.acting_player_position == 'landlord':
+        if self.acting_player_position == self.training_mode:
+            self.acting_player_position = 'pk_dp'
+        elif self.acting_player_position == 'pk_dp':
+            self.acting_player_position = self.training_mode
+        elif self.acting_player_position == None and self.training_mode == "landlord": # 先手
+            self.acting_player_position = "landlord"
+        elif self.acting_player_position == None and self.training_mode == "second_hand": # 后手
             self.acting_player_position = 'pk_dp'
         else:
-            self.acting_player_position = 'landlord'
+            raise Exception("mode not support")
         return self.acting_player_position
 
     def update_acting_player_hand_cards(self, action):
@@ -417,7 +441,7 @@ class GameEnv(object):
                          'second_hand': InfoSet('second_hand'),
                          'pk_dp': InfoSet('pk_dp')}
 
-        self.last_pid = 'landlord'
+        self.last_pid = self.training_mode
         self.round = 1
         self.scores = {
             'landlord': 0,

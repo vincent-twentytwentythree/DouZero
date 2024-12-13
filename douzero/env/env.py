@@ -27,7 +27,7 @@ class Env:
     """
     Doudizhu multi-agent wrapper
     """
-    def __init__(self, objective):
+    def __init__(self, objective, training_mode):
         """
         Objective is wp/adp/logadp. It indicates whether considers
         bomb in reward calculation. Here, we use dummy agents.
@@ -40,6 +40,7 @@ class Env:
         will perform the actual action in the game engine.
         """
         self.objective = objective
+        self.training_mode = training_mode
 
         # Initialize players
         # We use three dummy player for the target position
@@ -48,7 +49,7 @@ class Env:
             self.players[position] = DummyAgent(position)
 
         # Initialize the internal environment
-        self._env = GameEnv(self.players)
+        self._env = GameEnv(self.players, training_mode)
 
         self.infoset = None
 
@@ -69,11 +70,12 @@ class Env:
         # Randomly shuffle the deck
         _deck = deck.copy()
         np.random.shuffle(_deck)
-        card_play_data = {'landlord': _deck[:],
+        card_play_data = {'landlord': [],
                           'second_hand': [],
                           'pk_dp': [],
                           'three_landlord_cards': [],
                           }
+        card_play_data[self.training_mode] = _deck[:]
 
         # Initialize the cards
         self._env.card_play_init(card_play_data)
@@ -112,9 +114,9 @@ class Env:
         winner = self._game_winner
         scores = self._game_scores
         if self.objective == 'adp':
-            return scores["landlord"] - scores["pk_dp"]
+            return scores[self.training_mode] - scores["pk_dp"]
         else:
-            return 1.0 if scores["landlord"] > scores["pk_dp"] else -1.0
+            return 1.0 if scores[self.training_mode] > scores["pk_dp"] else -1.0
 
     @property
     def _game_infoset(self):

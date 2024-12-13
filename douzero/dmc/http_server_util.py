@@ -54,6 +54,7 @@ def get_legal_card_play_actions(crystal, player_hand_cards,
     moves = ms.filter_hearth_stone(all_moves, crystal, HearthStone,
                                 rival_num_on_battlefield,
                                 companion_num_on_battlefield,
+                                CardSet
                                 )
 
     return moves

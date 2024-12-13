@@ -294,7 +294,7 @@ class GameEnv(object):
         return ms.filter_hearth_stone(all_moves, min(10, self.round) - overload, HearthStone,
                                  self.rival_num_on_battlefield[self.acting_player_position],
                                  self.companion_num_on_battlefield[self.acting_player_position],
-                                 )
+                                )
 
     def calculateScore(self, action):
         overload = len([card for card in self.get_last_move() if HearthStone[card]["id"] == "CS3_007"]) # MYWEN
@@ -400,7 +400,6 @@ class GameEnv(object):
         all_moves = mg.gen_moves()
 
         moves = self.filter_hearth_stone(all_moves)
-        moves = moves + [[]]
 
         # for m in moves:
         #     m.sort()

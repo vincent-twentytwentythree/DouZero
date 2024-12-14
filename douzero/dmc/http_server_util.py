@@ -47,7 +47,7 @@ def getModel(flags):
 def get_legal_card_play_actions(crystal, player_hand_cards,
                                 rival_num_on_battlefield,
                                 companion_num_on_battlefield):
-    mg = MovesGener(player_hand_cards)
+    mg = MovesGener(player_hand_cards, CardSet)
 
     all_moves = mg.gen_moves()
 
@@ -129,13 +129,49 @@ def getMockActionIndex(info_set, crystal):
                                                         info_set.companion_with_spell_burst,
                                                         len(info_set.player_hand_cards)
                                 )
-        if score > scoreMax:
+        if score > scoreMax and 0 not in action: # 不带硬币
             scoreMax = score
             actionMaxIndex = index
     return actionMaxIndex
 
+def compete(action, action_pk, crystal, info_set):
+    cost, _ = ms.calculateActionCost(action, HearthStone, info_set.rival_num_on_battlefield, info_set.companion_num_on_battlefield)
+    score = ms.calculateScore(action, crystal, HearthStone,
+                                                        info_set.rival_num_on_battlefield,
+                                                        info_set.companion_num_on_battlefield,
+                                                        info_set.companion_with_power_inprove,
+                                                        info_set.companion_with_spell_burst,
+                                                        len(info_set.player_hand_cards)
+    )
+
+    cost_pk, _ = ms.calculateActionCost(action_pk, HearthStone, info_set.rival_num_on_battlefield, info_set.companion_num_on_battlefield)
+    score_pk = ms.calculateScore(action_pk, crystal, HearthStone,
+                                                        info_set.rival_num_on_battlefield,
+                                                        info_set.companion_num_on_battlefield,
+                                                        info_set.companion_with_power_inprove,
+                                                        info_set.companion_with_spell_burst,
+                                                        len(info_set.player_hand_cards)
+    )
+    
+    print ([HearthStone[card]["name"] for card in action], action, cost, score)
+    print ([HearthStone[card]["name"] for card in action_pk], action_pk, cost_pk, score_pk)
+    if cost >= cost_pk or score >= score_pk:
+        return action, cost, score
+    else :
+        return action_pk, cost_pk, score_pk
+    
+def patch(player_hand_cards, rival_battle_cards, companion_burst_cards):
+    if len(companion_burst_cards) > 0:
+        player_hand_cards = [card for card in player_hand_cards if card != "GDB_445" ] # 陨石风暴
+    if len(player_hand_cards) >= 5:
+        player_hand_cards = [card for card in player_hand_cards if card != "CS3_034" ] # 织法者玛里苟斯
+    if len(rival_battle_cards) >= 3:
+        player_hand_cards = [card for card in player_hand_cards if card != "VAC_321" ] # 辛迪奥斯
+    return player_hand_cards
+
 def predict(model, requestBody, flags):
     position = requestBody.get("position")
+    round = requestBody.get("round")
     crystal = requestBody.get("crystal")
     player_hand_cards = requestBody.get('player_hand_cards', [])
     player_deck_cards = requestBody.get('player_deck_cards', [])
@@ -143,6 +179,13 @@ def predict(model, requestBody, flags):
     rival_battle_cards = requestBody.get('rival_battle_cards', [])
     companion_battle_cards = requestBody.get('companion_battle_cards', [])
     companion_burst_cards = requestBody.get('companion_burst_cards', [])
+
+    player_hand_cards = patch(player_hand_cards, rival_battle_cards, companion_burst_cards)
+
+    overload = 0
+    if len(played_actions) > 0:
+        overload = len([card for card in played_actions[-1] if card == "CS3_007" ])
+    crystal = min(crystal, round - overload)
     info_set = get_infoset(position,
                            crystal,
                            toEnvCardList(player_hand_cards),
@@ -154,32 +197,26 @@ def predict(model, requestBody, flags):
                         )
     obs = get_obs(info_set)
 
+    device = getDevice(deviceName=flags.training_device)
+    obs_x = torch.from_numpy(obs['x_batch']).to(device)
+    obs_z = torch.from_numpy(obs['z_batch']).to(device)
 
-    if position != "pk_dp":
-        device = getDevice(deviceName=flags.training_device)
-        obs_x = torch.from_numpy(obs['x_batch']).to(device)
-        obs_z = torch.from_numpy(obs['z_batch']).to(device)
+    with torch.no_grad():
+        agent_output = model.forward(position, obs_z, obs_x)
+    _action_idx = int(agent_output['action'].cpu().detach().numpy())
 
-        with torch.no_grad():
-            agent_output = model.forward(position, obs_z, obs_x)
-        _action_idx = int(agent_output['action'].cpu().detach().numpy())
-    else:
-        _action_idx = getMockActionIndex(info_set, crystal=crystal)
-    action = obs['legal_actions'][_action_idx]
-    cost, _ = ms.calculateActionCost(action, HearthStone, len(rival_battle_cards), len(companion_battle_cards))
-    score = ms.calculateScore(action, crystal, HearthStone,
-                                                        info_set.rival_num_on_battlefield,
-                                                        info_set.companion_num_on_battlefield,
-                                                        info_set.companion_with_power_inprove,
-                                                        info_set.companion_with_spell_burst,
-                                                        len(player_hand_cards)
-                            )
+    _action_idx_pk = getMockActionIndex(info_set, crystal=crystal)
+
+    action, cost, score = compete(obs['legal_actions'][_action_idx], obs['legal_actions'][_action_idx_pk], crystal, info_set)
     realAction = [EnvCard2RealCard[card] for card in action]
     
     handCards = [HearthStone[card]["name"] for card in info_set.player_hand_cards]
     deckCards = [HearthStone[card]["name"] for card in info_set.player_deck_cards]
-    action = [HearthStone[card]["name"] for card in action]
+    actionRealname = [HearthStone[card]["name"] for card in action]
+    
     print(f"handCards: {handCards} ")
     print(f"deckCards: {deckCards} ")
-    print(f"action: {action}, cost: {cost}, score: {score} ")
+    print(f"action: {action}")
+    print(f"action: {actionRealname}")
+    print(f"cost: {cost}, score: {score}")
     return realAction

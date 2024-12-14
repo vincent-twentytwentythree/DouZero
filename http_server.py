@@ -5,6 +5,7 @@ from douzero.dmc import getModel, predict
 
 from http.server import BaseHTTPRequestHandler, HTTPServer
 import json
+import time
 
 class MyHandler(BaseHTTPRequestHandler):
     def __init__(self, *args, model=None, flags=None, **kwargs):

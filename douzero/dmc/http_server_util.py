@@ -155,7 +155,7 @@ def compete(action, action_pk, crystal, info_set):
     
     print ([HearthStone[card]["name"] for card in action], action, cost, score)
     print ([HearthStone[card]["name"] for card in action_pk], action_pk, cost_pk, score_pk)
-    if cost >= cost_pk or score >= score_pk:
+    if score >= score_pk:
         return action, cost, score
     else :
         return action_pk, cost_pk, score_pk
@@ -216,7 +216,7 @@ def predict(model, requestBody, flags):
     
     print(f"handCards: {handCards} ")
     print(f"deckCards: {deckCards} ")
-    print(f"action: {action}")
+    print(f"action: {realAction}")
     print(f"action: {actionRealname}")
     print(f"cost: {cost}, score: {score}")
 

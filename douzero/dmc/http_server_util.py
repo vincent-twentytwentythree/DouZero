@@ -219,4 +219,6 @@ def predict(model, requestBody, flags):
     print(f"action: {action}")
     print(f"action: {actionRealname}")
     print(f"cost: {cost}, score: {score}")
-    return realAction
+
+    response = {"status": "succ", "action": realAction, "cost": cost, "score": score, "crystal": crystal}
+    return response

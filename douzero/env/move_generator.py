@@ -23,6 +23,7 @@ class MovesGener(object):
         all_combinations = []
         for r in range(0, len(self.cards_list) + 1):
             actions_list = [list(tup) for tup in combinations(self.cards_list, r)]
+            actions_list = [action for action in actions_list if 17 not in action or 20 not in action] # 陨石风暴 和 麦芽岩浆 不要一起放
             all_combinations.extend(actions_list)
             for action in actions_list:
                 if 12 in action: # 水宝宝鱼人

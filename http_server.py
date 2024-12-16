@@ -5,6 +5,7 @@ from douzero.dmc import getModel, predict
 
 from http.server import BaseHTTPRequestHandler, HTTPServer
 import json
+import time
 
 class MyHandler(BaseHTTPRequestHandler):
     def __init__(self, *args, model=None, flags=None, **kwargs):
@@ -26,11 +27,11 @@ class MyHandler(BaseHTTPRequestHandler):
             print(f"responseBody: {responseBody}")
 
             # Send response
-            response = {"status": "succ", "action": responseBody}
+            
             self.send_response(200)  # HTTP status code
             self.send_header('Content-type', 'application/json')
             self.end_headers()
-            self.wfile.write(json.dumps(response).encode('utf-8'))
+            self.wfile.write(json.dumps(responseBody).encode('utf-8'))
         except json.JSONDecodeError:
             # Handle JSON parsing errors
             self.send_response(400)  # Bad Request

@@ -74,7 +74,8 @@ class Model:
         device = getDevice(deviceName=device)
         self.models['landlord'] = LandlordLstmModel().to(device)
         self.models['second_hand'] = LandlordLstmModel().to(device)
-        self.models['pk_dp'] = self.models[training_mode] # todo
+        if training_mode != None:
+            self.models['pk_dp'] = self.models[training_mode] # todo
 
     def forward(self, position, z, x, training=False, flags=None):
         model = self.models[position]

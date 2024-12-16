@@ -34,12 +34,16 @@ def filter_hearth_stone(moves, crystal, hearthStone, rival_num_on_battlefield, c
     return legal_moves
 
 def playCardsWithOrder(action, crystal, hearthStone, rival_num_on_battlefield, companion_num_on_battlefield):
-    playOrder = {
-        "GAME_005": 0, # coin
-        "GDB_445": 1, # 陨石风暴
-        "MINION": 2,
-        "SPELL": 3
-    }
+    playList = [
+        "GAME_005", # coin
+        "GDB_445", # 陨石风暴
+        "MIS_307",
+        "MIS_307t", 
+        "MINION",
+        "SPELL",
+    ]
+    
+    playOrder = {value: index for index, value in enumerate(playList)}
     
     sorted_cards = sorted(action, key=lambda card: playOrder[hearthStone[card]["id"]] if hearthStone[card]["id"] in playOrder else playOrder[hearthStone[card]["type"]])
     
@@ -65,7 +69,9 @@ def playCardsWithOrder(action, crystal, hearthStone, rival_num_on_battlefield, c
     #     print ("DEBUG end", cardsWithOrder)
     return cardsWithOrder
     
-def calculateScore(action, crystal, hearthStone, rival_num_on_battlefield, companion_num_on_battlefield,
+def calculateScore(action, crystal, hearthStone, 
+                   rival_num_on_battlefield,
+                   companion_num_on_battlefield,
                    companion_with_power_inprove,
                    companion_with_spell_burst,
                    hands_num):

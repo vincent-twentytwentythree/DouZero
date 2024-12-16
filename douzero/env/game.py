@@ -395,7 +395,7 @@ class GameEnv(object):
     
     def get_legal_card_play_actions(self):
         mg = MovesGener(
-            self.info_sets[self.acting_player_position].player_hand_cards)
+            self.info_sets[self.acting_player_position].player_hand_cards, CardSet)
 
         all_moves = mg.gen_moves()
 

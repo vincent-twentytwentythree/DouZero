@@ -37,6 +37,7 @@ def playCardsWithOrder(action, crystal, hearthStone, rival_num_on_battlefield, c
     playList = [
         "GAME_005", # coin
         "GDB_445", # 陨石风暴
+        "CS3_034",
         "MIS_307",
         "MIS_307t", 
         "MINION",
@@ -78,8 +79,8 @@ def calculateScore(action, crystal, hearthStone,
     score = 0
     for card in action:
         cardId = hearthStone[card]["id"]
-        if cardId.startswith("VAC_323"): # 麦芽岩浆
-            score += min(hearthStone[card]["cost"], rival_num_on_battlefield)
+        if cardId.startswith("VAC_323"): # 麦芽岩浆 并且 没有陨石风暴
+            score += min(hearthStone[card]["cost"], rival_num_on_battlefield) * (17 not in action)
         elif cardId.startswith("GDB_445"): # 陨石风暴
             score += hearthStone[card]["cost"] + (rival_num_on_battlefield - companion_num_on_battlefield)
         elif cardId == "TOY_330t11": # 奇利亚斯需要特殊算费用
@@ -88,21 +89,21 @@ def calculateScore(action, crystal, hearthStone,
             score += hearthStone[card]["cost"]
 
     # 法强+1
-    power_plus_count = len([card for card in action if "法术伤害+" in hearthStone[card]["text"] ]) + companion_with_power_inprove
+    power_plus_count = len([card for card in action if "法术伤害+" in hearthStone[card]["text"]])
     for card in action:
         cardId = hearthStone[card]["id"]
-        if cardId == "TOY_508": # 立体书
-            score += power_plus_count
-        elif cardId.startswith("VAC_323"): # 麦芽岩浆
-            score += power_plus_count * rival_num_on_battlefield
+        if cardId == "TOY_508": # 立体书 并且 没有陨石风暴
+            score += power_plus_count + companion_with_power_inprove * (17 not in action)
+        elif cardId.startswith("VAC_323"): # 麦芽岩浆 并且 没有陨石风暴
+            score += (power_plus_count + companion_with_power_inprove * (17 not in action)) * rival_num_on_battlefield 
         elif cardId.startswith("GDB_445"): # 陨石风暴
             score += companion_with_power_inprove * (rival_num_on_battlefield - companion_num_on_battlefield)
 
     # 法术迸发
-    countSpell = len([ card for card in action if hearthStone[card]["type"] == "SPELL" ]) #
+    countSpell = len([ card for card in action if hearthStone[card]["type"] == "SPELL" and hearthStone[card]["id"] != "GDB_445"]) # 没有陨石风暴
     score += (countSpell > 0) * companion_with_spell_burst * 2 # hard code MYWEN
     if countSpell > 0:
-        lastSpellIndex = [ index for index, card in enumerate(action) if hearthStone[card]["type"] == "SPELL" ][-1]
+        lastSpellIndex = [ index for index, card in enumerate(action) if hearthStone[card]["type"] == "SPELL" and hearthStone[card]["id"] != "GDB_445"][-1]
         for index, card in enumerate(action):
             if index >= lastSpellIndex:
                 break;
@@ -127,10 +128,12 @@ def newCards(action, hearthStone, hands_num):
     count = 1
     for card in action:
         cardId = hearthStone[card]["id"]
-        if cardId == "GDB_310": # 虚灵神谕者
-            spell_count = len([card for card in action if hearthStone[card]["type"].endswith("spell")])
+        if cardId == "GDB_310": # 虚灵神谕者 并且 没有陨石风暴
+            spell_count = len([card for card in action if hearthStone[card]["type"].endswith("spell") and hearthStone[card]["id"] != "GDB_445" ])
             if spell_count > 0:
                 count += 2
         elif cardId == "CS3_034": # 织法者玛里苟斯
-            count += 10 - (hands_num - len(action))
+            count += 10 - (hands_num - 1)
+        elif cardId == "GDB_451": # 三角测量
+            count += 1
     return count

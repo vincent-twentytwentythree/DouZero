@@ -379,8 +379,17 @@ class GameEnv(object):
         if action != []:
             count = ms.newCards(action, HearthStone, len(player_hand_cards))
             for card in action:
+                if card not in player_hand_cards and card in [18, 19, 20]: # 麦芽岩浆, 选择任何一个都行
+                    if 20 in player_hand_cards:
+                        card = 20
+                    elif 19 in player_hand_cards:
+                        card = 19
+                    elif 18 in player_hand_cards:
+                        card = 18
+                if card not in player_hand_cards:
+                    print ("MYWEN", card, action, player_hand_cards)
                 player_hand_cards.remove(card)
-                if HearthStone[card]["id"] == "VAC_323": #todo 三角测量
+                if HearthStone[card]["id"] == "VAC_323": # 麦芽岩浆 todo 三角测量
                     player_hand_cards.append(RealCard2EnvCard["VAC_323t"])
                 elif HearthStone[card]["id"] == "VAC_323t":
                     player_hand_cards.append(RealCard2EnvCard["VAC_323t2"])

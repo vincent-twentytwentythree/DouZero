@@ -70,6 +70,7 @@ class Model:
     """
     def __init__(self, device=0, training_mode=None):
         self.models = {}
+        self.deviceName = device
         device = getDevice(deviceName=device)
         self.models['landlord'] = LandlordLstmModel().to(device)
         self.models['second_hand'] = LandlordLstmModel().to(device)
@@ -80,6 +81,8 @@ class Model:
         return model.forward(z, x, training, flags)
 
     def share_memory(self):
+        if self.deviceName == 'mps':
+            return;
         self.models['landlord'].share_memory()
         self.models['second_hand'].share_memory()
         self.models['pk_dp'].share_memory()

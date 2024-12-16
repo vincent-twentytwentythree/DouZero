@@ -24,7 +24,7 @@ def repeatCard(move, CardSet):
     if CardSet["MIS_307"] in move: # 水宝宝鱼人
         move_list.append([CardSet["MIS_307t1"]] + move)
 
-def filter_hearth_stone(moves, crystal, hearthStone, rival_num_on_battlefield, companion_num_on_battlefield, CardSet):
+def filter_hearth_stone(moves, crystal, hearthStone, rival_num_on_battlefield, companion_num_on_battlefield, CardSet=None):
     legal_moves = []
     for move in moves:
         cost, minion = calculateActionCost(move, hearthStone, rival_num_on_battlefield, companion_num_on_battlefield)

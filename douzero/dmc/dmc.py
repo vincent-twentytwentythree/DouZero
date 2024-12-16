@@ -14,6 +14,9 @@ from .file_writer import FileWriter
 from .models import Model
 from .utils import get_batch, log, create_env, create_buffers, create_optimizers, act, getDevice
 
+
+mp.set_start_method("spawn", force=True)
+
 mean_episode_return_buf = {p:deque(maxlen=100) for p in ['landlord', 'second_hand', 'pk_dp']}
 
 def compute_loss(logits, targets):
@@ -159,14 +162,14 @@ def train(flags):
         """Thread target for the learning process."""
         nonlocal frames, position_frames, stats
         while frames < flags.total_frames:
-            log.info("batch_and_learn start %d %d %s", i, device, position)
+            log.info("batch_and_learn start %d %s %s", i, str(device), position)
             batch = get_batch(free_queue[device][position], full_queue[device][position], buffers[device][position], flags, get_data_device_locks)
             _stats = learn(position, models, learner_model.get_model(position), batch, 
                 optimizers[position], flags, learn_model_position_lock)
             with lock:
                 for k in _stats:
                     stats[k] = _stats[k]
-                log.info("batch_and_learn finished %d %d %s", i, device, position)
+                log.info("batch_and_learn finished %d %s %s", i, str(device), position)
                 to_log = dict(frames=frames)
                 to_log.update({k: stats[k] for k in stat_keys})
                 plogger.log(to_log)

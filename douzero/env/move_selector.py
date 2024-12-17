@@ -13,8 +13,14 @@ def calculateCardCost(card, hearthStone, rival_num_on_battlefield, companion_num
 def calculateActionCost(move, hearthStone, rival_num_on_battlefield, companion_num_on_battlefield):
     cost = 0
     minion = companion_num_on_battlefield
+    if 17 in move:
+        minion = 0
+        companion_num_on_battlefield = 0
+        rival_num_on_battlefield = 0
     for card in move:
         if hearthStone[card]["type"] == "MINION": # todo for 陨石风暴
+            minion += 1
+        if hearthStone[card]["type"].startswith("MIS_307") and minion < 7: # todo for 陨石风暴
             minion += 1
         cost += calculateCardCost(card, hearthStone, rival_num_on_battlefield, companion_num_on_battlefield)
     return cost, minion
@@ -95,7 +101,7 @@ def calculateScore(action, crystal, hearthStone,
         if cardId == "TOY_508": # 立体书 并且 没有陨石风暴
             score += power_plus_count + companion_with_power_inprove * (17 not in action)
         elif cardId.startswith("VAC_323"): # 麦芽岩浆 并且 没有陨石风暴
-            score += (power_plus_count + companion_with_power_inprove * (17 not in action)) * rival_num_on_battlefield 
+            score += (power_plus_count + companion_with_power_inprove * (17 not in action)) * rival_num_on_battlefield  * (17 not in action)
         elif cardId.startswith("GDB_445"): # 陨石风暴
             score += companion_with_power_inprove * (rival_num_on_battlefield - companion_num_on_battlefield)
 
@@ -114,14 +120,27 @@ def calculateScore(action, crystal, hearthStone,
                 score += 2
 
     # 其他特殊效果
+    minion = companion_num_on_battlefield
+    if 17 in action:
+        minion = 0
+        companion_num_on_battlefield = 0
+        rival_num_on_battlefield = 0
     for card in action:
         cardId = hearthStone[card]["id"]
+        if hearthStone[card]["type"] == "MINION": # todo for 陨石风暴
+            minion += 1
         if cardId == "CS3_034": # 织法者玛里苟斯
-            score += 10 - (hands_num - len(action))
+            score += 10 - (hands_num - 1)
         elif cardId == "VAC_321": # 伊辛迪奥斯
             score += 5 * 2
         elif cardId == "GDB_901" and rival_num_on_battlefield > 0: # 极紫外破坏者
             score += 1
+        elif hearthStone[card]["type"] == "MIS_307" and minion < 7: # todo for 陨石风暴
+            minion += 1
+            score += 1
+        elif hearthStone[card]["type"] == "MIS_307t1" and minion < 7: # todo for 陨石风暴
+            minion += 1
+            score += 8
     return score
 
 def newCards(action, hearthStone, hands_num):

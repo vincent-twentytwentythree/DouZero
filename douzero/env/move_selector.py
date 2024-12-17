@@ -20,15 +20,10 @@ def calculateActionCost(move, hearthStone, rival_num_on_battlefield, companion_n
     for card in move:
         if hearthStone[card]["type"] == "MINION": # todo for 陨石风暴
             minion += 1
-        if hearthStone[card]["type"].startswith("MIS_307") and minion < 7: # todo for 陨石风暴
+        if hearthStone[card]["id"].startswith("MIS_307") and minion < 7: # todo for 陨石风暴
             minion += 1
         cost += calculateCardCost(card, hearthStone, rival_num_on_battlefield, companion_num_on_battlefield)
     return cost, minion
-
-def repeatCard(move, CardSet):
-    move_list = []
-    if CardSet["MIS_307"] in move: # 水宝宝鱼人
-        move_list.append([CardSet["MIS_307t1"]] + move)
 
 def filter_hearth_stone(moves, crystal, hearthStone, rival_num_on_battlefield, companion_num_on_battlefield, CardSet=None):
     legal_moves = []
@@ -135,10 +130,10 @@ def calculateScore(action, crystal, hearthStone,
             score += 5 * 2
         elif cardId == "GDB_901" and rival_num_on_battlefield > 0: # 极紫外破坏者
             score += 1
-        elif hearthStone[card]["type"] == "MIS_307" and minion < 7: # todo for 陨石风暴
+        elif cardId == "MIS_307" and minion < 7: # todo for 陨石风暴
             minion += 1
             score += 1
-        elif hearthStone[card]["type"] == "MIS_307t1" and minion < 7: # todo for 陨石风暴
+        elif cardId == "MIS_307t1" and minion < 7: # todo for 陨石风暴
             minion += 1
             score += 8
     return score

@@ -56,8 +56,11 @@ class Env:
     def getDeckCards(self):
         return self._env.getDeckCards()
     
-    def getMockActionIndex(self):
-        return self._env.getMockActionIndex()
+    def getMockActionIndex(self, withCoin):
+        return self._env.getMockActionIndex(withCoin)
+    
+    def calculateScore(self, action):
+        return self._env.calculateScore(action)
     
     def reset(self):
         """

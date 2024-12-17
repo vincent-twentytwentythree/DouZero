@@ -15,7 +15,7 @@ from .models import Model
 from .utils import get_batch, log, create_env, create_buffers, create_optimizers, act, getDevice
 
 
-mp.set_start_method("spawn", force=True)
+# mp.set_start_method("spawn", force=True)
 
 mean_episode_return_buf = {p:deque(maxlen=100) for p in ['landlord', 'second_hand', 'pk_dp']}
 

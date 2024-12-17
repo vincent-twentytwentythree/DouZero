@@ -279,11 +279,13 @@ class GameEnv(object):
     def get_scores(self):
         return self.scores
     
-    def getMockActionIndex(self):
+    def getMockActionIndex(self, withCoin):
         scoreMax = 0
         actionMaxIndex = 0
         for index, action in enumerate(self.game_infoset.legal_actions):
             score = self.calculateScore(action)
+            if 0 in action and withCoin == False:
+                continue
             if score > scoreMax:
                 scoreMax = score
                 actionMaxIndex = index

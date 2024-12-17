@@ -20,7 +20,7 @@ def calculateActionCost(move, hearthStone, rival_num_on_battlefield, companion_n
     for card in move:
         if hearthStone[card]["type"] == "MINION": # 
             minion += 1
-        if hearthStone[card]["id"].startsWith("MIS_307") and minion < 7: # 水宝宝鱼人
+        if hearthStone[card]["id"].startswith("MIS_307") and minion < 7: # 水宝宝鱼人
             minion += 1
         cost += calculateCardCost(card, hearthStone, rival_num_on_battlefield, companion_num_on_battlefield)
     return cost, minion

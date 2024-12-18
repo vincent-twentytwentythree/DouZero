@@ -18,9 +18,9 @@ def calculateActionCost(move, hearthStone, rival_num_on_battlefield, companion_n
         companion_num_on_battlefield = 0
         rival_num_on_battlefield = 0
     for card in move:
-        if hearthStone[card]["type"] == "MINION": # todo for 陨石风暴
+        if hearthStone[card]["type"] == "MINION":
             minion += 1
-        if hearthStone[card]["id"].startswith("MIS_307") and minion < 7: # todo for 陨石风暴
+        if hearthStone[card]["id"].startswith("MIS_307") and minion < 7: # 水宝宝鱼人
             minion += 1
         cost += calculateCardCost(card, hearthStone, rival_num_on_battlefield, companion_num_on_battlefield)
     return cost, minion
@@ -102,7 +102,7 @@ def calculateScore(action, crystal, hearthStone,
 
     # 法术迸发
     countSpell = len([ card for card in action if hearthStone[card]["type"] == "SPELL" and hearthStone[card]["id"] != "GDB_445"]) # 没有陨石风暴
-    score += (countSpell > 0) * companion_with_spell_burst * 2 # hard code MYWEN
+    score += (countSpell > 0) * companion_with_spell_burst * 2 * (17 not in action) # hard code MYWEN 没有陨石风暴
     if countSpell > 0:
         lastSpellIndex = [ index for index, card in enumerate(action) if hearthStone[card]["type"] == "SPELL" and hearthStone[card]["id"] != "GDB_445"][-1]
         for index, card in enumerate(action):
@@ -122,7 +122,7 @@ def calculateScore(action, crystal, hearthStone,
         rival_num_on_battlefield = 0
     for card in action:
         cardId = hearthStone[card]["id"]
-        if hearthStone[card]["type"] == "MINION": # todo for 陨石风暴
+        if hearthStone[card]["type"] == "MINION":
             minion += 1
         if cardId == "CS3_034": # 织法者玛里苟斯
             score += 10 - (hands_num - 1)
@@ -130,10 +130,10 @@ def calculateScore(action, crystal, hearthStone,
             score += 5 * 2
         elif cardId == "GDB_901" and rival_num_on_battlefield > 0: # 极紫外破坏者
             score += 1
-        elif cardId == "MIS_307" and minion < 7: # todo for 陨石风暴
+        elif cardId == "MIS_307" and minion < 7: # 水宝宝鱼人
             minion += 1
             score += 1
-        elif cardId == "MIS_307t1" and minion < 7: # todo for 陨石风暴
+        elif cardId == "MIS_307t1" and minion < 7: # 水宝宝鱼人
             minion += 1
             score += 8
     return score

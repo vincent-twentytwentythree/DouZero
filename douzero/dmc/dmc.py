@@ -151,13 +151,12 @@ def train(flags):
         log.info(f"Resuming preempted job, current stats:\n{stats}")
 
     # Starting actor processes
-    actor_lock = mp.Lock()
     for device in device_iterator:
         num_actors = flags.num_actors
         for i in range(flags.num_actors):
             actor = ctx.Process(
                 target=act,
-                args=(i, device, free_queue[device], full_queue[device], models[device], buffers[device], flags, training_mode, actor_lock))
+                args=(i, device, free_queue[device], full_queue[device], models[device], buffers[device], flags, training_mode))
             actor.start()
             actor_processes.append(actor)
 

@@ -76,10 +76,13 @@ class Model:
     def __init__(self, device=0, training_mode=None):
         self.models = {}
         self.deviceName = device
+        self.training_mode = training_mode
         device = getDevice(deviceName=device)
-        self.models['landlord'] = LandlordLstmModel().to(device)
-        self.models['second_hand'] = LandlordLstmModel().to(device)
+        if training_mode == None:
+            self.models['landlord'] = LandlordLstmModel().to(device)
+            self.models['second_hand'] = LandlordLstmModel().to(device)
         if training_mode != None:
+            self.models[training_mode] = LandlordLstmModel().to(device)
             self.models['pk_dp'] = self.models[training_mode] # todo
 
     def forward(self, position, z, x, training=False, flags=None, topk=None):
@@ -89,14 +92,18 @@ class Model:
     def share_memory(self):
         if self.deviceName == 'mps':
             return;
-        self.models['landlord'].share_memory()
-        self.models['second_hand'].share_memory()
-        self.models['pk_dp'].share_memory()
+        if self.training_mode == None:
+            self.models['landlord'].share_memory()
+            self.models['second_hand'].share_memory()
+        else:
+            self.models[self.training_mode].share_memory()
 
     def eval(self):
-        self.models['landlord'].eval()
-        self.models['second_hand'].eval()
-        self.models['pk_dp'].eval()
+        if self.training_mode == None:
+            self.models['landlord'].eval()
+            self.models['second_hand'].eval()
+        else:
+            self.models[self.training_mode].eval()
 
     def parameters(self, position):
         return self.models[position].parameters()

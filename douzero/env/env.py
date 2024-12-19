@@ -230,6 +230,7 @@ def _get_one_hot_array(num_left_cards, max_num_cards): # one_hot for num_left_ca
     A utility function to obtain one-hot endoding
     """
     one_hot = np.zeros(max_num_cards)
+    num_left_cards = min(num_left_cards, max_num_cards)
     if num_left_cards >= 1:
         one_hot[num_left_cards - 1] = 1
     return one_hot

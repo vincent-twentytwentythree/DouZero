@@ -134,31 +134,26 @@ def getMockActionIndex(info_set, crystal):
             actionMaxIndex = index
     return actionMaxIndex
 
-def compete(action, action_pk, crystal, info_set):
-    cost, _ = ms.calculateActionCost(action, HearthStone, info_set.rival_num_on_battlefield, info_set.companion_num_on_battlefield)
-    score = ms.calculateScore(action, crystal, HearthStone,
-                                                        info_set.rival_num_on_battlefield,
-                                                        info_set.companion_num_on_battlefield,
-                                                        info_set.companion_with_power_inprove,
-                                                        info_set.companion_with_spell_burst,
-                                                        len(info_set.player_hand_cards)
-    )
-
-    cost_pk, _ = ms.calculateActionCost(action_pk, HearthStone, info_set.rival_num_on_battlefield, info_set.companion_num_on_battlefield)
-    score_pk = ms.calculateScore(action_pk, crystal, HearthStone,
-                                                        info_set.rival_num_on_battlefield,
-                                                        info_set.companion_num_on_battlefield,
-                                                        info_set.companion_with_power_inprove,
-                                                        info_set.companion_with_spell_burst,
-                                                        len(info_set.player_hand_cards)
-    )
+def compete(actions, crystal, info_set):
+    maxCost = 0
+    maxScore = 0
+    maxAction = []
+    for action in actions:
+        cost, _ = ms.calculateActionCost(action, HearthStone, info_set.rival_num_on_battlefield, info_set.companion_num_on_battlefield)
+        score = ms.calculateScore(action, crystal, HearthStone,
+                                                            info_set.rival_num_on_battlefield,
+                                                            info_set.companion_num_on_battlefield,
+                                                            info_set.companion_with_power_inprove,
+                                                            info_set.companion_with_spell_burst,
+                                                            len(info_set.player_hand_cards)
+        )
+        if score > maxScore or (score == maxScore and len(action) < len(maxAction)):
+            maxCost = cost
+            maxScore = score
+            maxAction = action
     
-    print ([HearthStone[card]["name"] for card in action], action, cost, score)
-    print ([HearthStone[card]["name"] for card in action_pk], action_pk, cost_pk, score_pk)
-    if score >= score_pk:
-        return action, cost, score
-    else :
-        return action_pk, cost_pk, score_pk
+        print ([HearthStone[card]["name"] for card in action], action, cost, score)
+    return maxAction, maxCost, maxScore
     
 def patch(player_hand_cards, rival_battle_cards, companion_burst_cards):
     if len(companion_burst_cards) > 0:
@@ -202,12 +197,13 @@ def predict(model, requestBody, flags):
     obs_z = torch.from_numpy(obs['z_batch']).to(device)
 
     with torch.no_grad():
-        agent_output = model.forward(position, obs_z, obs_x)
-    _action_idx = int(agent_output['action'].cpu().detach().numpy())
-
+        agent_output = model.forward(position, obs_z, obs_x, topk=3)
+    _action_idx = agent_output['action'].cpu().detach().numpy().tolist()
     _action_idx_pk = getMockActionIndex(info_set, crystal=crystal)
 
-    action, cost, score = compete(obs['legal_actions'][_action_idx], obs['legal_actions'][_action_idx_pk], crystal, info_set)
+    _action_idx.extend([_action_idx_pk])
+
+    action, cost, score = compete([obs['legal_actions'][idx] for idx in _action_idx], crystal, info_set)
     realAction = [EnvCard2RealCard[card] for card in action]
     
     handCards = [HearthStone[card]["name"] for card in info_set.player_hand_cards]

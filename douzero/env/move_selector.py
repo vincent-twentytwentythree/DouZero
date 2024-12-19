@@ -103,7 +103,7 @@ def calculateScore(action, crystal, hearthStone,
 
     # 法术迸发
     countSpell = len([ card for card in action if hearthStone[card]["type"] == "SPELL" and hearthStone[card]["id"] != "GDB_445"]) # 没有陨石风暴
-    score += (countSpell > 0) * companion_with_spell_burst * 2 # hard code MYWEN
+    score += (countSpell > 0) * companion_with_spell_burst * 2 * (17 not in action) # hard code MYWEN 没有陨石风暴
     if countSpell > 0:
         lastSpellIndex = [ index for index, card in enumerate(action) if hearthStone[card]["type"] == "SPELL" and hearthStone[card]["id"] != "GDB_445"][-1]
         for index, card in enumerate(action):

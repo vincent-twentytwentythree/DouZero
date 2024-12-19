@@ -23,8 +23,8 @@ def compute_loss(logits, targets):
     loss = ((logits.squeeze(-1) - targets)**2).mean()
     return loss
 
-# training_mode = "landlord"
-training_mode = 'second_hand'
+training_mode = "landlord"
+# training_mode = 'second_hand'
 
 def learn(position,
           actor_models,
@@ -87,8 +87,12 @@ def train(flags):
     elif flags.actor_device_mps:
         device_iterator = ['mps']
     else:
-        device_iterator = range(flags.num_actor_devices)
-        assert flags.num_actor_devices <= len(flags.gpu_devices.split(',')), 'The number of actor devices can not exceed the number of available devices'
+        assert abs(flags.num_actor_devices) <= len(flags.gpu_devices.split(',')), 'The number of actor devices can not exceed the number of available devices'
+        if flags.num_actor_devices > 0:
+            device_iterator = flags.gpu_devices.split(',')[:flags.num_actor_devices]
+        else:
+            device_iterator = flags.gpu_devices.split(',')[flags.num_actor_devices:]
+        print (device_iterator)
 
     # Initialize actor models
     models = {}

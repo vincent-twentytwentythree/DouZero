@@ -239,8 +239,7 @@ class GameEnv(object):
         self.game_infoset = self.get_infoset()
 
     def game_done(self):
-        if self.round > 14 or len(self.info_sets[self.acting_player_position].player_deck_cards) == 0 or \
-            abs(self.scores[self.training_mode] - self.scores["pk_dp"]) >= 30:
+        if self.round > 14 or abs(self.scores[self.training_mode] - self.scores["pk_dp"]) >= 30:
             # if one of the three players discards his hand,
             # then game is over.
             # if abs(self.scores[self.training_mode] - self.scores["pk_dp"]) < 5:

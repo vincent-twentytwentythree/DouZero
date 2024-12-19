@@ -23,8 +23,8 @@ def compute_loss(logits, targets):
     loss = ((logits.squeeze(-1) - targets)**2).mean()
     return loss
 
-training_mode = "landlord"
-# training_mode = 'second_hand'
+# training_mode = "landlord"
+training_mode = 'second_hand'
 
 def learn(position,
           actor_models,

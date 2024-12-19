@@ -376,7 +376,7 @@ class GameEnv(object):
 
     def update_acting_player_hand_cards(self, action):
         player_hand_cards = self.info_sets[self.acting_player_position].player_hand_cards
-        count = ms.newCards(action, HearthStone, len(player_hand_cards))
+        played_card = []
         if action != []:
             for card in action:
                 if card not in player_hand_cards and card in [18, 19, 20]: # 麦芽岩浆, 选择任何一个都行
@@ -388,6 +388,7 @@ class GameEnv(object):
                         card = 18
                 if card not in player_hand_cards:
                     print ("MYWEN", card, action, player_hand_cards)
+                played_card.extend([card])
                 player_hand_cards.remove(card)
                 if HearthStone[card]["id"] == "VAC_323": # 麦芽岩浆
                     player_hand_cards.append(RealCard2EnvCard["VAC_323t"])
@@ -396,7 +397,16 @@ class GameEnv(object):
                 elif HearthStone[card]["id"] == "MIS_307":
                     player_hand_cards.append(RealCard2EnvCard["MIS_307t1"])
 
+                count = ms.newCards(played_card, HearthStone, len(player_hand_cards))
+                if count > 0:
+                    player_deck_cards = self.info_sets[self.acting_player_position].player_deck_cards
+                    for card in player_deck_cards[:count]:
+                        if len(player_hand_cards) < 10:
+                            player_hand_cards.extend([card])
+                    self.info_sets[self.acting_player_position].player_deck_cards = player_deck_cards[count:]
+        # new round
         player_deck_cards = self.info_sets[self.acting_player_position].player_deck_cards
+        count = 1
         for card in player_deck_cards[:count]:
             if len(player_hand_cards) < 10:
                 player_hand_cards.extend([card])

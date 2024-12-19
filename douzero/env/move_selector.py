@@ -139,16 +139,18 @@ def calculateScore(action, crystal, hearthStone,
             minion += 1
     return score
 
-def newCards(action, hearthStone, hands_num):
-    count = 1
-    for card in action:
-        cardId = hearthStone[card]["id"]
-        if cardId == "GDB_310": # 虚灵神谕者 并且 没有陨石风暴
-            spell_count = len([card for card in action if hearthStone[card]["type"].endswith("spell") and hearthStone[card]["id"] != "GDB_445" ])
-            if spell_count > 0:
-                count += 2
-        elif cardId == "CS3_034": # 织法者玛里苟斯
-            count += 10 - (hands_num - 1)
-        elif cardId == "GDB_451": # 三角测量
+def newCards(played_card, hearthStone, hands_num):
+    lastCard = played_card[-1]
+    lastCardId = hearthStone[lastCard]["id"]
+    lastCardType = hearthStone[lastCard]["type"]
+    count = 0
+    if lastCardType == "SPELL" and lastCardId != "GDB_445": # 没有陨石风暴
+        spell_count = len([card for card in played_card[:-1] if hearthStone[card]["type"] == "SPELL" and hearthStone[card]["id"] != "GDB_445" ]) # 没有陨石风暴
+        spell_burst_count = len([card for card in played_card[:-1] if hearthStone[card]["id"] == "GDB_310" ]) # 虚灵神谕者
+        if spell_count == 0: # 之前没有触发过
+            count += 2 * spell_burst_count
+        if lastCardId == "GDB_451": # 三角测量
             count += 1
+    elif lastCardId == "CS3_034": # 织法者玛里苟斯
+        count += 10 - hands_num
     return count

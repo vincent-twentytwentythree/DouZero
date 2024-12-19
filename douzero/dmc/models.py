@@ -44,9 +44,11 @@ class LandlordLstmModel(nn.Module):
         else:
             if flags is not None and flags.exp_epsilon > 0 and np.random.rand() < flags.exp_epsilon:
                 action = torch.randint(x.shape[0], (1,))[0]
+                random = True
             else:
                 action = torch.argmax(x,dim=0)[0]
-            return dict(action=action)
+                random = False
+            return dict(action=action, random=random)
 
 class RandomModel(nn.Module):
     def __init__(self):

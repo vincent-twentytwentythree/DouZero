@@ -158,15 +158,21 @@ def act(i, device, free_queue, full_queue, model, buffers, flags, training_mode,
                 obs_z_buf[position].append(env_output['obs_z'])
                 if position == "pk_dp":
                     _action_idx = env.getMockActionIndex(True)
+                elif position == "landlord":
+                    with torch.no_grad():
+                        agent_output = model.forward(position, obs['z_batch'], obs['x_batch'], flags=flags)
+                    _action_idx = int(agent_output['action'].cpu().detach().numpy())
                 else:
                     with torch.no_grad():
                         agent_output = model.forward(position, obs['z_batch'], obs['x_batch'], flags=flags)
                     _action_idx = int(agent_output['action'].cpu().detach().numpy())
-                    _action_idx_pk = env.getMockActionIndex(False)
-                    score = env.calculateScore(obs['legal_actions'][_action_idx])
-                    score_pk = env.calculateScore(obs['legal_actions'][_action_idx_pk])
-                    if score < score_pk:
-                        _action_idx = _action_idx_pk
+                    _random = bool(agent_output['random'].cpu().detach().numpy())
+                    if _random == False:
+                        _action_idx_pk = env.getMockActionIndex(False)
+                        score = env.calculateScore(obs['legal_actions'][_action_idx])
+                        score_pk = env.calculateScore(obs['legal_actions'][_action_idx_pk])
+                        if score < score_pk:
+                            _action_idx = _action_idx_pk
                 action = obs['legal_actions'][_action_idx]
                 other_details = obs['other_details'][_action_idx]
                 obs_action_buf[position].append(_cards2tensor(other_details, action))

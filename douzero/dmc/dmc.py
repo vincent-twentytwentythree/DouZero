@@ -92,7 +92,6 @@ def train(flags):
             device_iterator = flags.gpu_devices.split(',')[:flags.num_actor_devices]
         else:
             device_iterator = flags.gpu_devices.split(',')[flags.num_actor_devices:]
-        print (device_iterator)
 
     # Initialize actor models
     models = {}

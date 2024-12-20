@@ -2,6 +2,10 @@ import os
 
 import torch
 
+import re
+
+import json
+
 from .file_writer import FileWriter
 from .models import Model
 from .utils import log, getDevice
@@ -16,6 +20,13 @@ from ..env.game import GameEnv
 
 gameEnv = GameEnv(None, None)
 
+#
+HearthStoneByCardId = {}
+# Open and load the JSON file
+with open("cards.json", "rb") as file:
+    data = json.load(file)
+    HearthStoneByCardId = {value["id"]: value for i, value in enumerate(data)}
+    
 def getModel(flags):
     if not flags.actor_device_cpu or flags.training_device != 'cpu':
         if not torch.cuda.is_available() and not torch.mps.is_available():
@@ -164,6 +175,26 @@ def patch(player_hand_cards, rival_battle_cards, companion_burst_cards):
         player_hand_cards = [card for card in player_hand_cards if card != "VAC_321" ] # 辛迪奥斯
     return player_hand_cards
 
+def getCoreCard(card_list):
+    every_after_pattern = r".*在你.*后.*"
+    every_when_pattern = r".*每当.*"
+    every_when_pattern_2 = r".*在你.*时.*"
+    attack_plus_pattern =r".*伤害+.*"
+    current_turn_pattern = r".*在本回合.*"
+    core_card_list = []
+    for cardId in card_list:
+        if cardId in HearthStoneByCardId:
+            value = HearthStoneByCardId[cardId]
+            if re.match(every_after_pattern, value["text"]) and re.match(current_turn_pattern, value["text"]) == None: 
+                core_card_list.append(cardId)
+            elif re.match(every_when_pattern, value["text"]) and re.match(current_turn_pattern, value["text"]) == None:
+                core_card_list.append(cardId)
+            elif re.match(every_when_pattern_2, value["text"]) and re.match(current_turn_pattern, value["text"]) == None:
+                core_card_list.append(cardId)
+            elif re.match(attack_plus_pattern, value["text"]) and re.match(current_turn_pattern, value["text"]) == None:
+                core_card_list.append(cardId)
+    return core_card_list
+    
 def predict(model, requestBody, flags):
     position = requestBody.get("position")
     round = requestBody.get("round")
@@ -216,5 +247,5 @@ def predict(model, requestBody, flags):
     print(f"action: {actionRealname}")
     print(f"cost: {cost}, score: {score}")
 
-    response = {"status": "succ", "action": realAction, "cost": cost, "score": score, "crystal": crystal}
+    response = {"status": "succ", "action": realAction, "cost": cost, "score": score, "crystal": crystal, "coreCardList": getCoreCard(rival_battle_cards)}
     return response

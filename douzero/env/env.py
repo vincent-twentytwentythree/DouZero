@@ -321,8 +321,8 @@ def _get_obs_landlord(infoset): # MYWEN obs details
 
     # 5 * 7
     companions_batch = np.zeros(rivals_left_batch.shape)
-    companions_spell_power_batch = np.zeros(rivals_left_batch.shape)
-    companions_spell_burst_batch = np.zeros(rivals_left_batch.shape)
+    companions_special_on_battle = np.zeros(rivals_left_batch.shape)
+    companions_special_on_action = np.zeros(rivals_left_batch.shape)
     aoe_spell_batch = np.zeros(rivals_left_batch.shape)
     spell_batch = np.zeros(rivals_left_batch.shape)
     
@@ -332,8 +332,8 @@ def _get_obs_landlord(infoset): # MYWEN obs details
     for j, action in enumerate(infoset.legal_actions):
         card_count_by_type = infoset.card_count_by_type[j]
         companions_batch[j,:] = _get_one_hot_array(infoset.companion_num_on_battlefield + card_count_by_type[CardTypeToIndex["minion"]], 7)
-        companions_spell_power_batch[j,:] = _get_one_hot_array(infoset.companion_with_power_inprove + card_count_by_type[CardTypeToIndex["minion_increase_spell_power"]], 7)
-        companions_spell_burst_batch[j,:] = _get_one_hot_array(infoset.companion_with_spell_burst + card_count_by_type[CardTypeToIndex["minion_with_burst"]], 7)
+        companions_special_on_battle[j,:] = _get_one_hot_array(infoset.companion_with_power_inprove + infoset.companion_with_spell_burst, 7)
+        companions_special_on_action[j,:] = _get_one_hot_array(card_count_by_type[CardTypeToIndex["minion_increase_spell_power"]] + card_count_by_type[CardTypeToIndex["minion_with_burst"]], 7)
         aoe_spell_batch[j,:] = _get_one_hot_array(card_count_by_type[CardTypeToIndex["aoe_spell"]], 7)
         spell_batch[j,:] = _get_one_hot_array(card_count_by_type[CardTypeToIndex["spell"]], 7)
         
@@ -343,8 +343,8 @@ def _get_obs_landlord(infoset): # MYWEN obs details
         
         other_details.append([infoset.rival_num_on_battlefield,
                               infoset.companion_num_on_battlefield + card_count_by_type[CardTypeToIndex["minion"]],
-                              infoset.companion_with_power_inprove + card_count_by_type[CardTypeToIndex["minion_increase_spell_power"]],
-                              infoset.companion_with_spell_burst + card_count_by_type[CardTypeToIndex["minion_with_burst"]],
+                              infoset.companion_with_power_inprove + infoset.companion_with_spell_burst,
+                              card_count_by_type[CardTypeToIndex["minion_increase_spell_power"]] + card_count_by_type[CardTypeToIndex["minion_with_burst"]],
                               card_count_by_type[CardTypeToIndex["aoe_spell"]],
                               card_count_by_type[CardTypeToIndex["spell"]],
                               infoset.advice[j]])
@@ -355,8 +355,8 @@ def _get_obs_landlord(infoset): # MYWEN obs details
                          my_handcards_left_batch, # 10
                          rivals_left_batch, # 7
                          companions_batch, # 7
-                         companions_spell_power_batch, # 7
-                         companions_spell_burst_batch, # 7
+                         companions_special_on_battle, # 7
+                         companions_special_on_action, # 7
                          aoe_spell_batch, # 7
                          spell_batch, # 7
                          advice_batch, # 10

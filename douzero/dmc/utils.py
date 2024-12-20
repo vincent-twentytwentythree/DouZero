@@ -55,7 +55,7 @@ def create_optimizers(flags, learner_model, training_mode):
     """
     Create three optimizers for the three positions
     """
-    positions = ['landlord', 'second_hand']
+    positions = [training_mode]
     optimizers = {}
     for position in positions:
         optimizer = torch.optim.RMSprop(
@@ -121,7 +121,7 @@ def create_buffers(flags, device_iterator):
 #         position: queue size of num_buffers
 #     }
 # }
-def act(i, device, free_queue, full_queue, model, buffers, flags, training_mode, lock): # MYWEN
+def act(i, device, free_queue, full_queue, model, buffers, flags, training_mode): # MYWEN
     """
     This function will run forever until we stop it. It will generate
     data from the environment and send the data to buffer. It uses

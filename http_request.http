@@ -1,0 +1,4 @@
+POST http://localhost:8000
+Content-Type: application/json
+
+{"position": "second_hand", "round": 7, "crystal": 7, "player_hand_cards": ["MIS_307t1", "GAME_005", "GDB_320", "GDB_435", "MIS_307t1", "GDB_445", "VAC_323t2", "GDB_451", "GDB_451", "TOY_330t11"], "player_deck_cards": [], "played_actions": [["MIS_307"], ["DEEP_008"], ["GDB_310"], ["GDB_310", "TOY_508"], ["MIS_307", "VAC_323"], ["GDB_434", "VAC_323t"]], "rival_battle_cards": [], "companion_battle_cards": ["GDB_434"], "companion_burst_cards": []}

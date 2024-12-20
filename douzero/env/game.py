@@ -238,8 +238,8 @@ class GameEnv(object):
             }
         self.game_infoset = self.get_infoset()
 
-    def game_done(self):
-        if self.round > 14 or abs(self.scores[self.training_mode] - self.scores["pk_dp"]) >= 30:
+    def game_done(self, round_change):
+        if round_change == True and (self.round > 14 or abs(self.scores[self.training_mode] - self.scores["pk_dp"]) >= 30):
             # if one of the three players discards his hand,
             # then game is over.
             # if abs(self.scores[self.training_mode] - self.scores["pk_dp"]) < 5:
@@ -345,12 +345,15 @@ class GameEnv(object):
         self.companion_with_power_inprove[self.acting_player_position] = random.randint(0, min(self.companion_num_on_battlefield[self.acting_player_position], cardByType[CardTypeToIndex["minion_increase_spell_power"]]))
         self.companion_with_spell_burst[self.acting_player_position] = random.randint(0, min(self.companion_num_on_battlefield[self.acting_player_position] - self.companion_with_power_inprove[self.acting_player_position],
                                                                                              cardByType[CardTypeToIndex["minion_with_burst"]]))
-        
+
+        round_change = False
         if self.training_mode == "landlord" and self.acting_player_position == "pk_dp":
             self.round += 1
+            round_change = True
         elif self.training_mode == "second_hand" and self.acting_player_position == "second_hand":
             self.round += 1
-        self.game_done()
+            round_change = True
+        self.game_done(round_change)
         if not self.game_over:
             self.get_acting_player_position()
             self.game_infoset = self.get_infoset()

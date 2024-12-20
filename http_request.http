@@ -1,4 +1,4 @@
 POST http://localhost:8000
 Content-Type: application/json
 
-{"position": "second_hand", "round": 7, "crystal": 7, "player_hand_cards": ["MIS_307t1", "GAME_005", "GDB_320", "GDB_435", "MIS_307t1", "GDB_445", "VAC_323t2", "GDB_451", "GDB_451", "TOY_330t11"], "player_deck_cards": [], "played_actions": [["MIS_307"], ["DEEP_008"], ["GDB_310"], ["GDB_310", "TOY_508"], ["MIS_307", "VAC_323"], ["GDB_434", "VAC_323t"]], "rival_battle_cards": [], "companion_battle_cards": ["GDB_434"], "companion_burst_cards": []}
+{"position": "second_hand", "round": 11, "crystal": 10, "player_hand_cards": ["VAC_323t", "GDB_320", "GDB_445", "GDB_320", "TOY_508", "VAC_321", "GDB_445", "VAC_323", "GDB_451", "GDB_434"], "player_deck_cards": [], "played_actions": [[], ["GDB_435"], ["GDB_901"], ["GDB_434"], ["GDB_310", "VAC_323"], ["MIS_307", "VAC_328", "CS3_007", "TOY_508"], ["GDB_435", "GDB_901", "GAME_005", "GDB_451"], ["MIS_307t1"], ["MIS_307", "MIS_307t1"], []], "rival_battle_cards": ["BAR_916", "TTN_960t6", "TTN_960t6"], "companion_battle_cards": ["VAC_321", "GDB_434", "GDB_310", "CS3_007"], "companion_burst_cards": []}

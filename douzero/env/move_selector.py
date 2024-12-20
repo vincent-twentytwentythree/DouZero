@@ -82,9 +82,9 @@ def calculateScore(action, crystal, hearthStone,
     for card in action:
         cardId = hearthStone[card]["id"]
         if cardId.startswith("VAC_323"): # 麦芽岩浆 并且 没有陨石风暴
-            score += min(hearthStone[card]["cost"], rival_num_on_battlefield) * (17 not in action)
+            score += rival_num_on_battlefield * (17 not in action)
         elif cardId.startswith("GDB_445"): # 陨石风暴
-            score += hearthStone[card]["cost"] + (rival_num_on_battlefield - companion_num_on_battlefield)
+            score += hearthStone[card]["cost"] + (rival_num_on_battlefield - companion_num_on_battlefield) * 4
         elif cardId == "TOY_330t11": # 奇利亚斯需要特殊算费用
             score += 9
         else:

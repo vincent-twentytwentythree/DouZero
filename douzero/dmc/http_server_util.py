@@ -166,32 +166,57 @@ def compete(actions, crystal, info_set):
         print ([HearthStone[card]["name"] for card in action], action, cost, score)
     return maxAction, maxCost, maxScore
     
-def patch(player_hand_cards, rival_battle_cards, companion_burst_cards):
+def patch(player_hand_cards, rival_battle_cards, companion_burst_cards, companion_battle_cards):
     if len(companion_burst_cards) > 0:
         player_hand_cards = [card for card in player_hand_cards if card != "GDB_445" ] # 陨石风暴
     if len(player_hand_cards) >= 5:
         player_hand_cards = [card for card in player_hand_cards if card != "CS3_034" ] # 织法者玛里苟斯
-    if len(rival_battle_cards) >= 3:
-        player_hand_cards = [card for card in player_hand_cards if card != "VAC_321" ] # 辛迪奥斯
+    if len(rival_battle_cards) >= 4:
+        player_hand_cards = [card for card in player_hand_cards if card != "VAC_321" ] # 伊辛迪奥斯
+    if len(companion_battle_cards) >= 6:
+        player_hand_cards = [card for card in player_hand_cards if card != "MIS_307t1" ] # 水宝宝鱼人
+    if len(companion_battle_cards) >= 4 and companion_burst_cards == 0:
+        player_hand_cards = [card for card in player_hand_cards if card != "TOY_508" ] # 立体书
     return player_hand_cards
 
-def getCoreCard(card_list):
-    every_after_pattern = r".*在你.*后.*"
-    every_when_pattern = r".*每当.*"
-    every_when_pattern_2 = r".*在你.*时.*"
-    attack_plus_pattern =r".*伤害+.*"
+def onceCard(txt):
     current_turn_pattern = r".*在本回合.*"
+    battle_cry_pattern = r".*战吼.*"
+    die_cry_pattern = r".*亡语.*"
+    return re.match(current_turn_pattern, txt) != None \
+        or re.match(battle_cry_pattern, txt) != None \
+        or re.match(die_cry_pattern, txt) != None
+    
+def getCoreCard(card_list):
+    every_after_pattern = r".*后.*"
+    every_when_pattern = r".*当.*"
+    every_when_pattern_2 = r".*时.*"
+    attack_plus_pattern =r".*伤害+.*"
+    other_have_pattern = r".*其他.*拥有.*"
+    other_get_pattern = r".*其他.*获得.*"
+    near_have_pattern = r".*相邻.*拥有.*"
+    near_get_pattern = r".*相邻.*获得.*"
     core_card_list = []
     for cardId in card_list:
         if cardId in HearthStoneByCardId:
             value = HearthStoneByCardId[cardId]
-            if re.match(every_after_pattern, value["text"]) and re.match(current_turn_pattern, value["text"]) == None: 
+            if "text" not in value:
+                continue
+            if re.match(every_after_pattern, value["text"]) and onceCard(value["text"]) == False:
                 core_card_list.append(cardId)
-            elif re.match(every_when_pattern, value["text"]) and re.match(current_turn_pattern, value["text"]) == None:
+            elif re.match(every_when_pattern, value["text"]) and onceCard(value["text"]) == False:
                 core_card_list.append(cardId)
-            elif re.match(every_when_pattern_2, value["text"]) and re.match(current_turn_pattern, value["text"]) == None:
+            elif re.match(every_when_pattern_2, value["text"]) and onceCard(value["text"]) == False:
                 core_card_list.append(cardId)
-            elif re.match(attack_plus_pattern, value["text"]) and re.match(current_turn_pattern, value["text"]) == None:
+            elif re.match(other_have_pattern, value["text"]) and onceCard(value["text"]) == False:
+                core_card_list.append(cardId)
+            elif re.match(other_get_pattern, value["text"]) and onceCard(value["text"]) == False:
+                core_card_list.append(cardId)
+            elif re.match(near_have_pattern, value["text"]) and onceCard(value["text"]) == False:
+                core_card_list.append(cardId)
+            elif re.match(near_get_pattern, value["text"]) and onceCard(value["text"]) == False:
+                core_card_list.append(cardId)
+            elif re.match(attack_plus_pattern, value["text"]) and onceCard(value["text"]) == False:
                 core_card_list.append(cardId)
     return core_card_list
     
@@ -206,7 +231,14 @@ def predict(model, requestBody, flags):
     companion_battle_cards = requestBody.get('companion_battle_cards', [])
     companion_burst_cards = requestBody.get('companion_burst_cards', [])
 
-    player_hand_cards = patch(player_hand_cards, rival_battle_cards, companion_burst_cards)
+    if crystal == 0:
+        response = {"status": "succ", "action": [], "cost": 0, "score": 0, "crystal": crystal, \
+            "coreRivalCardList": getCoreCard(rival_battle_cards), \
+            "coreCompanionCardList": getCoreCard(companion_battle_cards),
+            }
+        return response
+
+    player_hand_cards = patch(player_hand_cards, rival_battle_cards, companion_burst_cards, companion_battle_cards)
 
     overload = 0
     if len(played_actions) > 0:
@@ -247,5 +279,8 @@ def predict(model, requestBody, flags):
     print(f"action: {actionRealname}")
     print(f"cost: {cost}, score: {score}")
 
-    response = {"status": "succ", "action": realAction, "cost": cost, "score": score, "crystal": crystal, "coreCardList": getCoreCard(rival_battle_cards)}
+    response = {"status": "succ", "action": realAction, "cost": cost, "score": score, "crystal": crystal, \
+                "coreRivalCardList": getCoreCard(rival_battle_cards), \
+                "coreCompanionCardList": getCoreCard(companion_battle_cards),
+                }
     return response

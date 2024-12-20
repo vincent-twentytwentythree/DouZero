@@ -23,9 +23,6 @@ def compute_loss(logits, targets):
     loss = ((logits.squeeze(-1) - targets)**2).mean()
     return loss
 
-# training_mode = "landlord"
-training_mode = 'second_hand'
-
 def learn(position,
           actor_models,
           model,
@@ -68,6 +65,8 @@ def train(flags):
     Then it will start subprocesses as actors. Then, it will call
     learning function with  multiple threads.
     """
+    training_mode = flags.training_mode
+    print ("MYWEN", training_mode)
     if not flags.actor_device_cpu or flags.training_device != 'cpu':
         if not torch.cuda.is_available() and not torch.mps.is_available():
             raise AssertionError("CUDA not available. If you have GPUs, please specify the ID after `--gpu_devices`. Otherwise, please train with CPU with `python3 train.py --actor_device_cpu --training_device cpu`")

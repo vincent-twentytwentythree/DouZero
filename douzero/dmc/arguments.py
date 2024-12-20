@@ -23,6 +23,8 @@ parser.add_argument('--num_actors', default=5, type=int,
                     help='The number of actors for each simulation device')
 parser.add_argument('--training_device', default='0', type=str,
                     help='The index of the GPU used for training models. `cpu` means using cpu')
+parser.add_argument('--training_mode', default='landlord', type=str,
+                    help='landlord | second_hard')
 parser.add_argument('--load_model', action='store_true',
                     help='Load an existing model')
 parser.add_argument('--disable_checkpoint', action='store_true',

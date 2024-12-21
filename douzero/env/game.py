@@ -71,12 +71,19 @@ CardSet = [ # size of 21
 RealCard2EnvCard = {key: index for index, key in enumerate(CardSet)}
 EnvCard2RealCard = {value: key for key, value in RealCard2EnvCard.items()}
 
+FullCardSet = [] + CardSet
+
 #
 HearthStone = {}
 # Open and load the JSON file
 with open("cards.json", "rb") as file:
     data = json.load(file)
-    HearthStone = {RealCard2EnvCard[value["id"]]: value for i, value in enumerate(data) if value["id"] in RealCard2EnvCard}
+    for meta in data:
+        if meta["id"] not in RealCard2EnvCard:
+            RealCard2EnvCard[meta["id"]] = len(FullCardSet)
+            EnvCard2RealCard[len(FullCardSet)] = meta["id"]
+            FullCardSet.append(meta["id"])
+        HearthStone[RealCard2EnvCard[meta["id"]]] = meta
 
 class GameEnv(object):
 

@@ -14,7 +14,7 @@ from ..env.game import InfoSet
 from ..env.move_generator import MovesGener
 from ..env import move_selector as ms
 
-from ..env.game import CardTypeToIndex, CardSet, RealCard2EnvCard, EnvCard2RealCard, HearthStone
+from ..env.game import CardTypeToIndex, CardSet, FullCardSet, RealCard2EnvCard, EnvCard2RealCard, HearthStone
 
 from ..env.game import GameEnv
 
@@ -25,8 +25,10 @@ HearthStoneByCardId = {}
 # Open and load the JSON file
 with open("cards.json", "rb") as file:
     data = json.load(file)
-    HearthStoneByCardId = {value["id"]: value for i, value in enumerate(data)}
-    
+    HearthStoneByCardId = {meta["id"]: meta for i, meta in enumerate(data)}
+
+MaxIndex = len(CardSet)
+
 def getModel(flags):
     if not flags.actor_device_cpu or flags.training_device != 'cpu':
         if not torch.cuda.is_available() and not torch.mps.is_available():
@@ -58,14 +60,14 @@ def getModel(flags):
 def get_legal_card_play_actions(crystal, player_hand_cards,
                                 rival_num_on_battlefield,
                                 companion_num_on_battlefield):
-    mg = MovesGener(player_hand_cards, CardSet)
+    mg = MovesGener(player_hand_cards, FullCardSet)
 
     all_moves = mg.gen_moves()
 
     moves = ms.filter_hearth_stone(all_moves, crystal, HearthStone,
                                 rival_num_on_battlefield,
                                 companion_num_on_battlefield,
-                                CardSet
+                                FullCardSet
                                 )
 
     return moves
@@ -82,12 +84,16 @@ def get_infoset(position,
     
     info_set = InfoSet(position)
 
-    info_set.legal_actions = get_legal_card_play_actions(crystal,
+    info_set.all_legal_actions = get_legal_card_play_actions(crystal,
                                                          player_hand_cards,
                                                          len(rival_battle_cards),
                                                          len(companion_battle_cards)
                                                          )
-    info_set.player_hand_cards = player_hand_cards
+    
+    info_set.legal_actions = [action for action in info_set.all_legal_actions if len(action) == 0 or max(action) < MaxIndex]
+
+    info_set.full_player_hand_cards = player_hand_cards
+    info_set.player_hand_cards = [card for card in info_set.full_player_hand_cards if card < MaxIndex]
     if len(player_deck_cards) == 0:
         _deck = deck.copy()
         for card in player_hand_cards:
@@ -123,22 +129,25 @@ def get_infoset(position,
                                                         info_set.companion_num_on_battlefield,
                                                         info_set.companion_with_power_inprove,
                                                         info_set.companion_with_spell_burst,
-                                                        len(info_set.player_hand_cards)) // 3)) # todo
+                                                        len(info_set.full_player_hand_cards)) // 3)) # todo
     return info_set
 
-def toEnvCardList(cardList):
-    return [RealCard2EnvCard[card] for card in cardList if card in RealCard2EnvCard] # todo
+def toEnvCardList(cardList, filter = True):
+    if filter == True:
+        return [RealCard2EnvCard[card] for card in cardList if card in RealCard2EnvCard and RealCard2EnvCard[card] < MaxIndex]
+    else:
+        return [RealCard2EnvCard[card] for card in cardList if card in RealCard2EnvCard]
 
 def getMockActionIndex(info_set, crystal):
     scoreMax = 0
     actionMaxIndex = 0
-    for index, action in enumerate(info_set.legal_actions):
+    for index, action in enumerate(info_set.all_legal_actions):
         score = ms.calculateScore(action, crystal, HearthStone,
                                                         info_set.rival_num_on_battlefield,
                                                         info_set.companion_num_on_battlefield,
                                                         info_set.companion_with_power_inprove,
                                                         info_set.companion_with_spell_burst,
-                                                        len(info_set.player_hand_cards)
+                                                        len(info_set.full_player_hand_cards)
                                 )
         if score > scoreMax and 0 not in action: # 不带硬币
             scoreMax = score
@@ -156,14 +165,14 @@ def compete(actions, crystal, info_set):
                                                             info_set.companion_num_on_battlefield,
                                                             info_set.companion_with_power_inprove,
                                                             info_set.companion_with_spell_burst,
-                                                            len(info_set.player_hand_cards)
+                                                            len(info_set.full_player_hand_cards)
         )
         if score > maxScore or (score == maxScore and len(action) < len(maxAction)):
             maxCost = cost
             maxScore = score
             maxAction = action
     
-        print ([HearthStone[card]["name"] for card in action], action, cost, score)
+        print ([HearthStone[card]["name"] for card in action], action, "cost: ", cost, "score: ", score)
     return maxAction, maxCost, maxScore
     
 def patch(player_hand_cards, rival_battle_cards, companion_burst_cards, companion_battle_cards):
@@ -196,29 +205,32 @@ def getCoreCard(card_list):
     other_get_pattern = r".*其他.*获得.*"
     near_have_pattern = r".*相邻.*拥有.*"
     near_get_pattern = r".*相邻.*获得.*"
-    core_card_list = []
+    core_cards = {}
     for cardId in card_list:
-        if cardId in HearthStoneByCardId:
-            value = HearthStoneByCardId[cardId]
-            if "text" not in value:
-                continue
-            if re.match(every_after_pattern, value["text"]) and onceCard(value["text"]) == False:
-                core_card_list.append(cardId)
-            elif re.match(every_when_pattern, value["text"]) and onceCard(value["text"]) == False:
-                core_card_list.append(cardId)
-            elif re.match(every_when_pattern_2, value["text"]) and onceCard(value["text"]) == False:
-                core_card_list.append(cardId)
-            elif re.match(other_have_pattern, value["text"]) and onceCard(value["text"]) == False:
-                core_card_list.append(cardId)
-            elif re.match(other_get_pattern, value["text"]) and onceCard(value["text"]) == False:
-                core_card_list.append(cardId)
-            elif re.match(near_have_pattern, value["text"]) and onceCard(value["text"]) == False:
-                core_card_list.append(cardId)
-            elif re.match(near_get_pattern, value["text"]) and onceCard(value["text"]) == False:
-                core_card_list.append(cardId)
-            elif re.match(attack_plus_pattern, value["text"]) and onceCard(value["text"]) == False:
-                core_card_list.append(cardId)
-    return core_card_list
+        value = 1.0
+        if cardId in HearthStoneByCardId and "text" in HearthStoneByCardId[cardId]:
+            meta = HearthStoneByCardId[cardId]
+            if cardId == "VAC_321":
+                value += 5
+            elif re.match(every_after_pattern, meta["text"]) and onceCard(meta["text"]) == False:
+                value += 2
+            elif re.match(every_when_pattern, meta["text"]) and onceCard(meta["text"]) == False:
+                value += 2
+            elif re.match(every_when_pattern_2, meta["text"]) and onceCard(meta["text"]) == False:
+                value += 2
+            elif re.match(other_have_pattern, meta["text"]) and onceCard(meta["text"]) == False:
+                value += 6
+            elif re.match(other_get_pattern, meta["text"]) and onceCard(meta["text"]) == False:
+                value += 6
+            elif re.match(near_have_pattern, meta["text"]) and onceCard(meta["text"]) == False:
+                value += 2
+            elif re.match(near_get_pattern, meta["text"]) and onceCard(meta["text"]) == False:
+                value += 2
+            elif re.match(attack_plus_pattern, meta["text"]) and onceCard(meta["text"]) == False:
+                value += 2
+        core_cards[cardId] = value
+        
+    return core_cards
     
 def predict(model, requestBody, flags):
     position = requestBody.get("position")
@@ -233,22 +245,17 @@ def predict(model, requestBody, flags):
 
     if crystal == 0:
         response = {"status": "succ", "action": [], "cost": 0, "score": 0, "crystal": crystal, \
-            "coreRivalCardList": getCoreCard(rival_battle_cards), \
-            "coreCompanionCardList": getCoreCard(companion_battle_cards),
+            "coreCards": getCoreCard(rival_battle_cards + companion_battle_cards + CardSet),
             }
         return response
 
     player_hand_cards = patch(player_hand_cards, rival_battle_cards, companion_burst_cards, companion_battle_cards)
 
-    overload = 0
-    if len(played_actions) > 0:
-        overload = len([card for card in played_actions[-1] if card == "CS3_007" ])
-    crystal = min(crystal, round - overload)
     info_set = get_infoset(position,
                            crystal,
-                           toEnvCardList(player_hand_cards),
-                           toEnvCardList(player_deck_cards),
-                           [toEnvCardList(action) for action in played_actions],
+                           toEnvCardList(player_hand_cards, False),
+                           toEnvCardList(player_deck_cards, False),
+                           [toEnvCardList(action, True) for action in played_actions],
                            rival_battle_cards,
                            companion_battle_cards,
                            companion_burst_cards
@@ -266,7 +273,7 @@ def predict(model, requestBody, flags):
 
     _action_idx.extend([_action_idx_pk])
 
-    action, cost, score = compete([obs['legal_actions'][idx] for idx in _action_idx], crystal, info_set)
+    action, cost, score = compete([info_set.all_legal_actions[idx] for idx in _action_idx], crystal, info_set)
     realAction = [EnvCard2RealCard[card] for card in action]
     
     handCards = [HearthStone[card]["name"] for card in info_set.player_hand_cards]
@@ -280,7 +287,6 @@ def predict(model, requestBody, flags):
     print(f"cost: {cost}, score: {score}")
 
     response = {"status": "succ", "action": realAction, "cost": cost, "score": score, "crystal": crystal, \
-                "coreRivalCardList": getCoreCard(rival_battle_cards), \
-                "coreCompanionCardList": getCoreCard(companion_battle_cards),
+                "coreCards": getCoreCard(rival_battle_cards + companion_battle_cards + CardSet),
                 }
     return response

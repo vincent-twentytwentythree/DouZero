@@ -289,4 +289,11 @@ def predict(model, requestBody, flags):
     response = {"status": "succ", "action": realAction, "cost": cost, "score": score, "crystal": crystal, \
                 "coreCards": getCoreCard(rival_battle_cards + companion_battle_cards + CardSet),
                 }
+    if flags.debug:
+        if 'TOY_508' in player_hand_cards and len(rival_battle_cards) > 0:
+            response = {"status": "succ", "action": ['TOY_508'], "cost": 1, "score": 1, "crystal": crystal, \
+                "coreCards": getCoreCard(rival_battle_cards + companion_battle_cards + CardSet),
+                }
+        elif 'TOY_508' in realAction:
+            realAction.remove('TOY_508')
     return response

@@ -27,6 +27,8 @@ parser.add_argument('--training_mode', default='landlord', type=str,
                     help='landlord | second_hard')
 parser.add_argument('--load_model', action='store_true',
                     help='Load an existing model')
+parser.add_argument('--debug', action='store_true',
+                    help='Debug mode')
 parser.add_argument('--disable_checkpoint', action='store_true',
                     help='Disable saving checkpoint')
 parser.add_argument('--savedir', default='douzero_checkpoints',

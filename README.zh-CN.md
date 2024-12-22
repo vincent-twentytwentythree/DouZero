@@ -203,6 +203,7 @@ sh get_most_recent.sh douzero_checkpoints/douzero/
 ```
 之后您可以在`most_recent_model`路径下找到最近一次保存的模型。
 ## 启动http服务
+copy model to douzero_checkpoints/douzeor
 python http_server.py --gpu_devices 0 --num_actor_devices 1 --num_actors 6 --training_device 0 --load_model --save_interval 10
 ## Windows下的问题
 如果您使用的是Windows系统并用GPU进行模拟，您将可能遇到`operation not supported`错误。这是由于Windows系统不支持CUDA tensor上的多进程。但是，由于我们的代码是对GPU进行优化，有对CUDA tensor的大量操作。如果您有解决方案，请联系我们！

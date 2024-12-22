@@ -38,6 +38,7 @@ def playCardsWithOrder(action, crystal, hearthStone, rival_num_on_battlefield, c
     playList = [
         "GAME_005", # coin
         "GDB_445", # 陨石风暴
+        "GDB_320",
         "CS3_034",
         "MIS_307",
         "MIS_307t", 

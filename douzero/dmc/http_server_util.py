@@ -212,7 +212,7 @@ def getCoreCard(card_list):
             meta = HearthStoneByCardId[cardId]
             if cardId == "VAC_321":
                 value += 5
-            elif re.match(every_after_pattern, meta["text"]) and onceCard(meta["text"]) == False:
+            elif re.match(every_after_pattern, meta["text"]) and onceCard(meta["text"]) == False and cardId != "CFM_637":
                 value += 2
             elif re.match(every_when_pattern, meta["text"]) and onceCard(meta["text"]) == False:
                 value += 2
@@ -236,7 +236,42 @@ def getCoreCard(card_list):
 
 def getPowerPlus(companion_battle_cards):
     return len([card for card in companion_battle_cards if "text" in HearthStoneByCardId[card] and "法术伤害+" in HearthStoneByCardId[card]["text"]])
-    
+
+def filter(action):
+    support_card = [
+        # SPELL
+        "GDB_445",
+        "CS2_024",
+        "GDB_456",
+        "YOG_526",
+        "TOY_508",
+        "TTN_454",
+        "CORE_AT_064",
+        "MIS_709",
+        "CS2_029",
+        "GDB_305",
+        "CORE_EX1_129",
+        "VAC_323",
+        "CORE_CS2_093",
+        "VAC_414",
+        "ETC_069",
+        "CS2_032",
+        "EX1_179",
+        "VAC_951",
+        "CS2_022",
+        "VAC_916",
+        "ETC_076",
+        "TTN_079",
+        "GDB_439",
+        # MINION
+        "GDB_901",
+        "TTN_087",
+        "WORK_009",
+        "CS3_034",
+    ]
+    return [card for card in action if card in support_card or "text" not in HearthStoneByCardId[card] or \
+            ("一个敌方随从" not in HearthStoneByCardId[card]["text"] and "一个友方随从" not in HearthStoneByCardId[card]["text"])]
+
 def predict(model, requestBody, flags):
     position = requestBody.get("position")
     round = requestBody.get("round")

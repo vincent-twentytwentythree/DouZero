@@ -228,6 +228,8 @@ def getCoreCard(card_list):
                 value += 2
             elif re.match(attack_plus_pattern, meta["text"]) and onceCard(meta["text"]) == False:
                 value += 2
+            elif re.match("你的英雄技能的法力值", meta["text"]) and onceCard(meta["text"]) == False:
+                value += 2
         core_cards[cardId] = value
         
     return core_cards

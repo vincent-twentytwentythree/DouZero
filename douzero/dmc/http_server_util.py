@@ -237,7 +237,7 @@ def getCoreCard(card_list):
 def getPowerPlus(companion_battle_cards):
     return len([card for card in companion_battle_cards if "text" in HearthStoneByCardId[card] and "法术伤害+" in HearthStoneByCardId[card]["text"]])
 
-def filter(action):
+def filter(action): # todo
     support_card = [
         # SPELL
         "GDB_445",
@@ -327,7 +327,7 @@ def predict(model, requestBody, flags):
     print(f"action: {actionRealname}")
     print(f"cost: {cost}, score: {score}")
 
-    response = {"status": "succ", "action": realAction, "cost": cost, "score": score, "crystal": crystal, \
+    response = {"status": "succ", "action": filter(realAction), "cost": cost, "score": score, "crystal": crystal, \
                 "coreCards": getCoreCard(rival_battle_cards + companion_battle_cards + CardSet),
                 "powerPlus": getPowerPlus(companion_battle_cards),
                 }
@@ -335,5 +335,5 @@ def predict(model, requestBody, flags):
         if 'TOY_508' in player_hand_cards and len(rival_battle_cards) > 0:
             response["action"] = ['TOY_508']
         elif 'TOY_508' in realAction:
-            realAction.remove('TOY_508')
+            response["action"].remove('TOY_508')
     return response

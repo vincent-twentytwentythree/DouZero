@@ -231,6 +231,9 @@ def getCoreCard(card_list):
         core_cards[cardId] = value
         
     return core_cards
+
+def getPowerPlus(companion_battle_cards):
+    return len([card for card in companion_battle_cards if "text" in HearthStoneByCardId[card] and "法术伤害+" in HearthStoneByCardId[card]["text"]])
     
 def predict(model, requestBody, flags):
     position = requestBody.get("position")
@@ -246,6 +249,7 @@ def predict(model, requestBody, flags):
     if crystal == 0:
         response = {"status": "succ", "action": [], "cost": 0, "score": 0, "crystal": crystal, \
             "coreCards": getCoreCard(rival_battle_cards + companion_battle_cards + CardSet),
+            "powerPlus": getPowerPlus(companion_battle_cards),
             }
         return response
 
@@ -288,12 +292,11 @@ def predict(model, requestBody, flags):
 
     response = {"status": "succ", "action": realAction, "cost": cost, "score": score, "crystal": crystal, \
                 "coreCards": getCoreCard(rival_battle_cards + companion_battle_cards + CardSet),
+                "powerPlus": getPowerPlus(companion_battle_cards),
                 }
     if flags.debug:
         if 'TOY_508' in player_hand_cards and len(rival_battle_cards) > 0:
-            response = {"status": "succ", "action": ['TOY_508'], "cost": 1, "score": 1, "crystal": crystal, \
-                "coreCards": getCoreCard(rival_battle_cards + companion_battle_cards + CardSet),
-                }
+            response["action"] = ['TOY_508']
         elif 'TOY_508' in realAction:
             realAction.remove('TOY_508')
     return response

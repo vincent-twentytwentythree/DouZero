@@ -203,6 +203,7 @@ sh get_most_recent.sh douzero_checkpoints/douzero/
 ```
 之后您可以在`most_recent_model`路径下找到最近一次保存的模型。
 ## 启动http服务
+* AAECAaoIBLWKBJyeBsekBr2+Bg3q5wPBnwaopwakwAamwAbR0AaX4QaY4QaY4gb44gbk6gbt6gaN+AYAAQP0swbHpAb3swbHpAbu3gbHpAYAAA==
 * copy model to douzero_checkpoints/douzero/landlord_model.tar douzero_checkpoints/douzero/second_hand_model.tar
 * python http_server.py --gpu_devices 0 --num_actor_devices 1 --num_actors 6 --training_device 0 --load_model --save_interval 10
 ## Windows下的问题

@@ -207,7 +207,7 @@ def getCoreCard(card_list):
     near_get_pattern = r".*相邻.*获得.*"
     core_cards = {}
     for cardId in card_list:
-        value = 1.0
+        value = 0.0
         if cardId in HearthStoneByCardId and "text" in HearthStoneByCardId[cardId]:
             meta = HearthStoneByCardId[cardId]
             if cardId == "VAC_321":

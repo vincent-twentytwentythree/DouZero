@@ -270,6 +270,7 @@ def filter(action): # todo
         "CS3_034",
     ]
     return [card for card in action if card in support_card or "text" not in HearthStoneByCardId[card] or \
+            "随机" in HearthStoneByCardId[card]["text"] or \
             ("一个敌方随从" not in HearthStoneByCardId[card]["text"] and "一个友方随从" not in HearthStoneByCardId[card]["text"])]
 
 def predict(model, requestBody, flags):

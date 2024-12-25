@@ -28,8 +28,8 @@ log.setLevel(logging.INFO)
 Buffers = typing.Dict[str, typing.List[torch.Tensor]]
 
 # Environment -> Env -> GameEnv
-def create_env(flags, training_mode):
-    return Env(flags.objective, training_mode)
+def create_env(flags):
+    return Env(flags.objective, flags)
 
 def get_batch(free_queue,
               full_queue,
@@ -51,11 +51,11 @@ def get_batch(free_queue,
         free_queue.put(m)
     return batch
 
-def create_optimizers(flags, learner_model, training_mode):
+def create_optimizers(flags, learner_model):
     """
     Create three optimizers for the three positions
     """
-    positions = [training_mode]
+    positions = [flags.training_mode]
     optimizers = {}
     for position in positions:
         optimizer = torch.optim.RMSprop(
@@ -65,7 +65,7 @@ def create_optimizers(flags, learner_model, training_mode):
             eps=flags.epsilon,
             alpha=flags.alpha)
         optimizers[position] = optimizer
-    optimizers['pk_dp'] = optimizers[training_mode]
+    optimizers['pk_dp'] = optimizers[flags.training_mode]
     return optimizers
 
 def create_buffers(flags, device_iterator):
@@ -80,14 +80,14 @@ def create_buffers(flags, device_iterator):
     for device in device_iterator:
         buffers[device] = {}
         for position in positions:
-            x_dim = 136 # MYWEN
+            x_dim = 17 # MYWEN
             specs = dict(
                 done=dict(size=(T,), dtype=torch.bool),
                 episode_return=dict(size=(T,), dtype=torch.float32),
                 target=dict(size=(T,), dtype=torch.float32),
                 obs_x_no_action=dict(size=(T, x_dim), dtype=torch.int8),
-                obs_action=dict(size=(T, 94), dtype=torch.int8), # MYWEN
-                obs_z=dict(size=(T, 5, 126), dtype=torch.int8), # MYWEN
+                obs_action=dict(size=(T, 42), dtype=torch.int8), # MYWEN
+                obs_z=dict(size=(T, 20, 42), dtype=torch.int8), # MYWEN
             )
             _buffers: Buffers = {key: [] for key in specs}
             for _ in range(flags.num_buffers):
@@ -121,18 +121,18 @@ def create_buffers(flags, device_iterator):
 #         position: queue size of num_buffers
 #     }
 # }
-def act(i, device, free_queue, full_queue, model, buffers, flags, training_mode): # MYWEN
+def act(i, device, free_queue, full_queue, model, buffers, flags): # MYWEN
     """
     This function will run forever until we stop it. It will generate
     data from the environment and send the data to buffer. It uses
     a free queue and full queue to syncup with the main process.
     """
-    positions = [training_mode, 'pk_dp']
+    positions = [flags.training_mode, 'pk_dp']
     try:
         T = flags.unroll_length
         log.info('Device %s Actor %i started.', str(device), i)
 
-        env = create_env(flags, training_mode)
+        env = create_env(flags)
         env = Environment(env, device)
 
         # done_buf: label actions whether game is down for each position
@@ -155,7 +155,6 @@ def act(i, device, free_queue, full_queue, model, buffers, flags, training_mode)
         while True:
             while True:
                 obs_x_no_action_buf[position].append(env_output['obs_x_no_action'])
-                obs_z_buf[position].append(env_output['obs_z'])
                 if position == "pk_dp":
                     _action_idx = env.getMockActionIndex(True)
                 # elif position == "landlord":
@@ -176,7 +175,8 @@ def act(i, device, free_queue, full_queue, model, buffers, flags, training_mode)
                 #             _action_idx = _action_idx_pk
                 action = obs['legal_actions'][_action_idx]
                 other_details = obs['other_details'][_action_idx]
-                obs_action_buf[position].append(_cards2tensor(other_details, action))
+                obs_z_buf[position].append(torch.vstack((_cards2tensor(other_details, action), env_output['obs_z'])))
+                obs_action_buf[position].append(torch.from_numpy(_cards2array(action)))
                 size[position] += 1
                 position, obs, env_output = env.step(action)
                 if env_output['done']:
@@ -194,7 +194,7 @@ def act(i, device, free_queue, full_queue, model, buffers, flags, training_mode)
                             done_buf[p].extend([False for _ in range(diff-1)])
                             done_buf[p].append(True)
 
-                            episode_return = env_output['episode_return'] if p == training_mode else -env_output['episode_return']
+                            episode_return = env_output['episode_return'] if p == flags.training_mode else -env_output['episode_return']
                             episode_return_buf[p].extend([0.0 for _ in range(diff-1)])
                             episode_return_buf[p].append(episode_return)
                             target_buf[p].extend([episode_return for _ in range(diff)])
@@ -234,15 +234,21 @@ def _cards2tensor(other_details, list_cards):
     representation
     See Figure 2 in https://arxiv.org/pdf/2106.06135.pdf
     """
-    matrix = np.hstack(( # mywen
+    attributes1 = np.hstack(( # mywen
         _get_one_hot_array(other_details[0], 7),
         _get_one_hot_array(other_details[1], 7),
         _get_one_hot_array(other_details[2], 7),
         _get_one_hot_array(other_details[3], 7),
         _get_one_hot_array(other_details[4], 7),
         _get_one_hot_array(other_details[5], 7),
-        _get_one_hot_array(other_details[6], 10),
-        _cards2array(list_cards)
     ))
+    attributes2 = np.hstack(( # mywen
+        _get_one_hot_array(other_details[6], 10),
+        [0] * 32,
+    ))
+    matrix = np.vstack((_cards2array(list_cards), # 1 * 42
+                        [attributes1], # 1 * 42
+                        [attributes2], # 1 * 42
+    )) # 20 * 42
     matrix = torch.from_numpy(matrix)
     return matrix

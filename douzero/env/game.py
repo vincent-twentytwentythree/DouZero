@@ -87,9 +87,10 @@ with open("cards.json", "rb") as file:
 
 class GameEnv(object):
 
-    def __init__(self, players, training_mode):
+    def __init__(self, players, flags):
         
-        self.training_mode = training_mode # "landlord" or 'second_hand'
+        self.flags = flags
+        self.training_mode = flags.training_mode if flags != None else None # "landlord" or 'second_hand'
 
         self.card_play_action_seq = []
 
@@ -250,7 +251,7 @@ class GameEnv(object):
             # if one of the three players discards his hand,
             # then game is over.
             # if abs(self.scores[self.training_mode] - self.scores["pk_dp"]) < 5:
-            # self.debug()
+            self.debug()
             self.update_num_wins_scores()
             self.game_over = True
             self.game_over_times += 1
@@ -258,6 +259,8 @@ class GameEnv(object):
                 print ("MYWEN game_over", self.game_over_times)
 
     def debug(self): # MYWEN
+        if self.flags.debug == False:
+            return ;
         print ("MYWEN", self.deck_cards)
         print ("MYWEN", [HearthStone[card]["name"] for card in self.deck_cards])
         print ("MYWEN", self.scores[self.training_mode], self.scores["pk_dp"])

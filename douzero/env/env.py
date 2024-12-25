@@ -27,7 +27,7 @@ class Env:
     """
     Doudizhu multi-agent wrapper
     """
-    def __init__(self, objective, training_mode):
+    def __init__(self, objective, flags):
         """
         Objective is wp/adp/logadp. It indicates whether considers
         bomb in reward calculation. Here, we use dummy agents.
@@ -40,7 +40,7 @@ class Env:
         will perform the actual action in the game engine.
         """
         self.objective = objective
-        self.training_mode = training_mode
+        self.training_mode = flags.training_mode
 
         # Initialize players
         # We use three dummy player for the target position
@@ -49,7 +49,7 @@ class Env:
             self.players[position] = DummyAgent(position)
 
         # Initialize the internal environment
-        self._env = GameEnv(self.players, training_mode)
+        self._env = GameEnv(self.players, flags)
 
         self.infoset = None
 
@@ -261,10 +261,15 @@ def _action_seq_list2array(action_seq_list):
     Finally, we obtain a 5x162 matrix, which will be fed
     into LSTM for encoding.
     """
-    action_seq_array = np.zeros((len(action_seq_list), 42))
+    # action_seq_array = np.zeros((len(action_seq_list), 42))
+    # for row, list_cards in enumerate(action_seq_list):
+    #     action_seq_array[row, :] = _cards2array(list_cards)
+    # action_seq_array = action_seq_array.reshape(5, 126)
+    # return action_seq_array
+    action_seq_array = np.ones((len(action_seq_list), 42)) * -1  # Default Value -1 for not using area
     for row, list_cards in enumerate(action_seq_list):
-        action_seq_array[row, :] = _cards2array(list_cards)
-    action_seq_array = action_seq_array.reshape(5, 126)
+        if list_cards != []:
+            action_seq_array[row, :42] = _cards2array(list_cards)
     return action_seq_array
 
 def _process_action_seq(sequence, length=15):
@@ -274,6 +279,7 @@ def _process_action_seq(sequence, length=15):
     with zeros.
     """
     sequence = sequence[-length:].copy()
+    sequence = sequence[::-1]
     if len(sequence) < length:
         empty_sequence = [[] for _ in range(length - len(sequence))]
         empty_sequence.extend(sequence)
@@ -320,9 +326,10 @@ def _get_obs_landlord(infoset): # MYWEN obs details
         num_legal_actions, axis=0)
 
     # 5 * 7
-    companions_batch = np.zeros(rivals_left_batch.shape)
+    companions_on_battle_batch = np.zeros(rivals_left_batch.shape)
     companions_special_on_battle = np.zeros(rivals_left_batch.shape)
     companions_special_on_action = np.zeros(rivals_left_batch.shape)
+    companions_on_action_batch = np.zeros(rivals_left_batch.shape)
     aoe_spell_batch = np.zeros(rivals_left_batch.shape)
     spell_batch = np.zeros(rivals_left_batch.shape)
     
@@ -331,7 +338,8 @@ def _get_obs_landlord(infoset): # MYWEN obs details
     other_details = []
     for j, action in enumerate(infoset.legal_actions):
         card_count_by_type = infoset.card_count_by_type[j]
-        companions_batch[j,:] = _get_one_hot_array(infoset.companion_num_on_battlefield + card_count_by_type[CardTypeToIndex["minion"]], 7)
+        companions_on_battle_batch[j,:] = _get_one_hot_array(infoset.companion_num_on_battlefield, 7)
+        companions_on_action_batch[j,:] = _get_one_hot_array(card_count_by_type[CardTypeToIndex["minion"]], 7)
         companions_special_on_battle[j,:] = _get_one_hot_array(infoset.companion_with_power_inprove + infoset.companion_with_spell_burst, 7)
         companions_special_on_action[j,:] = _get_one_hot_array(card_count_by_type[CardTypeToIndex["minion_increase_spell_power"]] + card_count_by_type[CardTypeToIndex["minion_with_burst"]], 7)
         aoe_spell_batch[j,:] = _get_one_hot_array(card_count_by_type[CardTypeToIndex["aoe_spell"]], 7)
@@ -341,36 +349,69 @@ def _get_obs_landlord(infoset): # MYWEN obs details
         
         my_action_batch[j, :] = _cards2array(action)
         
-        other_details.append([infoset.rival_num_on_battlefield,
-                              infoset.companion_num_on_battlefield + card_count_by_type[CardTypeToIndex["minion"]],
+        other_details.append([infoset.companion_num_on_battlefield,
                               infoset.companion_with_power_inprove + infoset.companion_with_spell_burst,
+                              card_count_by_type[CardTypeToIndex["minion"]],
                               card_count_by_type[CardTypeToIndex["minion_increase_spell_power"]] + card_count_by_type[CardTypeToIndex["minion_with_burst"]],
                               card_count_by_type[CardTypeToIndex["aoe_spell"]],
                               card_count_by_type[CardTypeToIndex["spell"]],
                               infoset.advice[j]])
 
-    x_batch = np.hstack((my_handcards_batch, # 42
-                         player_deck_cards_batch, # 42
-                         last_action_batch, # 42
-                         my_handcards_left_batch, # 10
-                         rivals_left_batch, # 7
-                         companions_batch, # 7
-                         companions_special_on_battle, # 7
-                         companions_special_on_action, # 7
-                         aoe_spell_batch, # 7
-                         spell_batch, # 7
-                         advice_batch, # 10
-                         my_action_batch)) # 42
-    x_no_action = np.hstack((my_handcards,
-                            player_deck_cards,
-                            last_action,
-                            my_handcards_left,
-                             ))
-    z = _action_seq_list2array(_process_action_seq(
-        infoset.played_actions))
-    z_batch = np.repeat(
+    x_batch = np.hstack((
+        rivals_left_batch, # actions * 7
+        my_handcards_left_batch, # actions * 7
+    )) # -> actions * 14
+    x_no_action = np.hstack((
+        rivals_left,
+        my_handcards_left,
+    )) # -> 14
+
+    z =np.vstack((
+                my_handcards,  # 42
+                player_deck_cards,  # 42
+                _action_seq_list2array(_process_action_seq(infoset.card_play_action_seq, 15)) # 15 * 42
+                )) # -> 17 * 42
+
+    _z_batch = np.repeat(
         z[np.newaxis, :, :],
-        num_legal_actions, axis=0)
+        num_legal_actions, axis=0) # actions * 17 * 42
+    
+#    x_batch = np.hstack((my_handcards_batch, # 42
+#                         player_deck_cards_batch, # 42
+#                         last_action_batch, # 42
+#                         my_handcards_left_batch, # 10
+#                         rivals_left_batch, # 7
+#                         companions_on_battle_batch, # 7
+#                         companions_special_on_battle, # 7
+#                         companions_special_on_action, # 7
+#                         aoe_spell_batch, # 7
+#                         spell_batch, # 7
+#                         advice_batch, # 10
+#                         my_action_batch)) # 42
+
+    my_action_batch = my_action_batch[:,np.newaxis,:] # actions * 1 * 42
+
+    z_batch = np.zeros([len(_z_batch),20,42],int) # actions * 20 * 42
+    for i in range(0,len(_z_batch)):
+        attributes1 = np.hstack((
+            companions_on_battle_batch[i], # 7
+            companions_special_on_battle[i], # 7
+            companions_on_action_batch[i], # 7
+            companions_special_on_action[i], # 7
+            aoe_spell_batch[i], # 7
+            spell_batch[i], # 7
+        )) # -> 42
+
+        attributes2 = np.hstack((
+            advice_batch[i], # 10
+            [0] * 32,
+        )) # -> 42
+
+        z_batch[i] = np.vstack((my_action_batch[i], # 1 * 42
+                                [attributes1], # 1 * 42
+                                [attributes2], # 1 * 42
+                                _z_batch[i]) # 17 * 42
+                                ) # 20 * 42
     obs = {
             'position': infoset.player_position,
             'x_batch': x_batch.astype(np.float32), # shape (num_legal_actions, 4 * 42 + 6 * 7 + 2 * 10)

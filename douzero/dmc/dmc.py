@@ -32,10 +32,8 @@ def learn(position,
           lock):
     """Performs a learning (optimization) step."""
     device = getDevice(deviceName=flags.training_device)
-    obs_x_no_action = batch['obs_x_no_action'].to(device)
-    obs_action = batch['obs_action'].to(device)
-    obs_x = torch.cat((obs_x_no_action, obs_action), dim=2).float()
-    obs_x = torch.flatten(obs_x, 0, 1)
+    obs_x = batch["obs_x_no_action"]
+    obs_x = torch.flatten(obs_x, 0, 1).to(device)
     obs_z = torch.flatten(batch['obs_z'].to(device), 0, 1).float()
     target = torch.flatten(batch['target'].to(device), 0, 1)
     episode_returns = batch['episode_return'][batch['done']]
@@ -58,7 +56,7 @@ def learn(position,
             actor_model.get_model(position).load_state_dict(model.state_dict())
         return stats
 
-def train(flags):  
+def train(flags):
     """
     This is the main funtion for training. It will first
     initilize everything, such as buffers, optimizers, etc.
@@ -119,7 +117,7 @@ def train(flags):
     learner_model = Model(device=flags.training_device, training_mode=training_mode)
 
     # Create optimizers
-    optimizers = create_optimizers(flags, learner_model, training_mode)
+    optimizers = create_optimizers(flags, learner_model)
 
     # Stat Keys
     stat_keys = [
@@ -155,7 +153,7 @@ def train(flags):
         for i in range(flags.num_actors):
             actor = ctx.Process(
                 target=act,
-                args=(i, device, free_queue[device], full_queue[device], models[device], buffers[device], flags, training_mode))
+                args=(i, device, free_queue[device], full_queue[device], models[device], buffers[device], flags))
             actor.start()
             actor_processes.append(actor)
 

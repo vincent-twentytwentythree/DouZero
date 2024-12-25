@@ -84,7 +84,8 @@ def create_buffers(flags, device_iterator):
             specs = dict(
                 done=dict(size=(T,), dtype=torch.bool),
                 episode_return=dict(size=(T,), dtype=torch.float32),
-                target=dict(size=(T,), dtype=torch.float32),
+                target_adp=dict(size=(T,), dtype=torch.float32),
+                target_wp=dict(size=(T,), dtype=torch.float32),
                 obs_x_no_action=dict(size=(T, x_dim), dtype=torch.int8),
                 obs_action=dict(size=(T, 42), dtype=torch.int8), # MYWEN
                 obs_z=dict(size=(T, 20, 42), dtype=torch.int8), # MYWEN
@@ -144,7 +145,8 @@ def act(i, device, free_queue, full_queue, model, buffers, flags): # MYWEN
         # size: total action number for each position
         done_buf = {p: [] for p in positions}
         episode_return_buf = {p: [] for p in positions}
-        target_buf = {p: [] for p in positions}
+        target_adp_buf = {p: [] for p in positions}
+        target_wp_buf = {p: [] for p in positions}
         obs_x_no_action_buf = {p: [] for p in positions}
         obs_action_buf = {p: [] for p in positions}
         obs_z_buf = {p: [] for p in positions}
@@ -189,15 +191,16 @@ def act(i, device, free_queue, full_queue, model, buffers, flags): # MYWEN
                     #                     file.write(", ".join(map(str, deckCard)) + "\n")
                     #             deckCardBatch = []
                     for p in positions:
-                        diff = size[p] - len(target_buf[p])
+                        diff = size[p] - len(target_adp_buf[p])
                         if diff > 0:
                             done_buf[p].extend([False for _ in range(diff-1)])
                             done_buf[p].append(True)
-
-                            episode_return = env_output['episode_return'] if p == flags.training_mode else -env_output['episode_return']
+                            episode_return = env_output['episode_return'] if p == flags.training_mode else -env_output['episode_return'] # MYWEN / 24
+                            wp_return = 1. if episode_return > 0. else -1.
                             episode_return_buf[p].extend([0.0 for _ in range(diff-1)])
                             episode_return_buf[p].append(episode_return)
-                            target_buf[p].extend([episode_return for _ in range(diff)])
+                            target_adp_buf[p].extend([episode_return for _ in range(diff)])
+                            target_wp_buf[p].extend([wp_return for _ in range(diff)])
                     break
             for p in positions:
                 while size[p] > T: 
@@ -207,14 +210,16 @@ def act(i, device, free_queue, full_queue, model, buffers, flags): # MYWEN
                     for t in range(T):
                         buffers[p]['done'][index][t, ...] = done_buf[p][t]
                         buffers[p]['episode_return'][index][t, ...] = episode_return_buf[p][t]
-                        buffers[p]['target'][index][t, ...] = target_buf[p][t]
+                        buffers[p]['target_adp'][index][t, ...] = target_adp_buf[p][t]
+                        buffers[p]['target_wp'][index][t, ...] = target_wp_buf[p][t]
                         buffers[p]['obs_x_no_action'][index][t, ...] = obs_x_no_action_buf[p][t]
                         buffers[p]['obs_action'][index][t, ...] = obs_action_buf[p][t]
                         buffers[p]['obs_z'][index][t, ...] = obs_z_buf[p][t]
                     full_queue[p].put(index)
                     done_buf[p] = done_buf[p][T:]
                     episode_return_buf[p] = episode_return_buf[p][T:]
-                    target_buf[p] = target_buf[p][T:]
+                    target_adp_buf[p] = target_adp_buf[p][T:]
+                    target_wp_buf[p] = target_wp_buf[p][T:]
                     obs_x_no_action_buf[p] = obs_x_no_action_buf[p][T:]
                     obs_action_buf[p] = obs_action_buf[p][T:]
                     obs_z_buf[p] = obs_z_buf[p][T:]

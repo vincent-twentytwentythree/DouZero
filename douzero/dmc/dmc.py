@@ -20,7 +20,11 @@ from .utils import get_batch, log, create_env, create_buffers, create_optimizers
 mean_episode_return_buf = {p:deque(maxlen=100) for p in ['landlord', 'second_hand', 'pk_dp']}
 
 def compute_loss(logits, targets):
-    loss = ((logits.squeeze(-1) - targets)**2).mean()
+    loss = ((logits.squeeze(-1) - targets) ** 2).mean()
+    return loss
+
+def compute_loss_(logits, targets):
+    loss = ((logits.squeeze(-1) - targets) ** 2)
     return loss
 
 def learn(position,
@@ -35,13 +39,20 @@ def learn(position,
     obs_x = batch["obs_x_no_action"]
     obs_x = torch.flatten(obs_x, 0, 1).to(device)
     obs_z = torch.flatten(batch['obs_z'].to(device), 0, 1).float()
-    target = torch.flatten(batch['target'].to(device), 0, 1)
+    target_adp = torch.flatten(batch['target_adp'].to(device), 0, 1)
+    target_wp = torch.flatten(batch['target_wp'].to(device), 0, 1)
     episode_returns = batch['episode_return'][batch['done']]
     mean_episode_return_buf[position].append(torch.mean(episode_returns).to(device))
         
     with lock:
-        learner_outputs = model(obs_z, obs_x, return_value=True)
-        loss = compute_loss(learner_outputs['values'], target)
+        win_rate, win, lose = model.forward(obs_z, obs_x, return_value=True)['values']
+
+        loss1 = compute_loss(win_rate, target_wp)
+        l_w = compute_loss_(win, target_adp) * (1. + target_wp) / 2.
+        l_l = compute_loss_(lose, target_adp) * (1. - target_wp) / 2.
+        loss2 = l_w.mean() + l_l.mean()
+        loss = loss1 + loss2
+
         stats = {
             'mean_episode_return_'+position: torch.mean(torch.stack([_r for _r in mean_episode_return_buf[position]])).item(),
             'loss_'+position: loss.item(),

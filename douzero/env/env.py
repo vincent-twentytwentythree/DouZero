@@ -359,12 +359,12 @@ def _get_obs_landlord(infoset): # MYWEN obs details
 
     x_batch = np.hstack((
         rivals_left_batch, # actions * 7
-        my_handcards_left_batch, # actions * 7
-    )) # -> actions * 14
+        my_handcards_left_batch, # actions * 10
+    )) # -> actions * 17
     x_no_action = np.hstack((
         rivals_left,
         my_handcards_left,
-    )) # -> 14
+    )) # -> 17
 
     z =np.vstack((
                 my_handcards,  # 42

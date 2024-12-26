@@ -159,7 +159,8 @@ def train(flags):
             optimizers[k].load_state_dict(checkpoint_states["optimizer_state_dict"][k])
             for device in device_iterator:
                 models[device].get_model(k).load_state_dict(learner_model.get_model(k).state_dict())
-        stats = checkpoint_states["stats"]
+        for k in checkpoint_states["stats"]:
+            stats[k] = checkpoint_states["stats"][k]
         frames = checkpoint_states["frames"]
         position_frames = checkpoint_states["position_frames"]
         log.info(f"Resuming preempted job, current stats:\n{stats}")

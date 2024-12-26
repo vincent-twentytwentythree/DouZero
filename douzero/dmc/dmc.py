@@ -56,6 +56,8 @@ def learn(position,
         stats = {
             'mean_episode_return_'+position: torch.mean(torch.stack([_r for _r in mean_episode_return_buf[position]])).item(),
             'loss_'+position: loss.item(),
+            'loss1_'+position: loss1.item(),
+            'loss2_'+position: loss2.item(),
         }
         
         optimizer.zero_grad()
@@ -134,8 +136,12 @@ def train(flags):
     stat_keys = [
         'mean_episode_return_landlord',
         'loss_landlord',
+        'loss1_landlord',
+        'loss2_landlord',
         'mean_episode_return_second_hand',
         'loss_second_hand',
+        'loss1_second_hand',
+        'loss2_second_hand',
         'mean_episode_return_pk_dp',
         'loss_pk_dp',
     ]

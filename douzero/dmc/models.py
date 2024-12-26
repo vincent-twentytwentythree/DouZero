@@ -11,6 +11,9 @@ import torch.nn.functional as F
 
 from .env_utils import getDevice
 
+def mish(input):
+    return input * torch.tanh(torch.nn.functional.softplus(input))
+
 class ChannelAttention(nn.Module):
     def __init__(self, channel, reduction=4):
         super().__init__()
@@ -36,7 +39,8 @@ class BasicBlockM(nn.Module):
         self.conv1 = nn.Conv1d(in_planes, planes, kernel_size=3,
                                stride=stride, padding=1, bias=False)
         self.bn1 = nn.BatchNorm1d(planes)
-        self.mish = nn.Mish(inplace=True)
+        # self.mish = nn.Mish(inplace=True)
+        self.mish = mish
         self.conv2 = nn.Conv1d(planes, planes, kernel_size=3,
                                stride=1, padding=1, bias=False)
         self.bn2 = nn.BatchNorm1d(planes)

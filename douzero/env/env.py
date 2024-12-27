@@ -355,7 +355,10 @@ def _get_obs_landlord(infoset): # MYWEN obs details
                               card_count_by_type[CardTypeToIndex["minion_increase_spell_power"]] + card_count_by_type[CardTypeToIndex["minion_with_burst"]],
                               card_count_by_type[CardTypeToIndex["aoe_spell"]],
                               card_count_by_type[CardTypeToIndex["spell"]],
-                              infoset.advice[j]])
+                              infoset.advice[j],
+                              infoset.rival_num_on_battlefield,
+                              len(infoset.player_hand_cards),
+                              ])
 
     x_batch = np.hstack((
         rivals_left_batch, # actions * 7

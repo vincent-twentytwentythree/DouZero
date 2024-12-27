@@ -250,9 +250,9 @@ def _cards2tensor(other_details, list_cards):
     attributes2 = np.hstack(( # mywen
         _get_one_hot_array(other_details[6], 10),
         _get_one_hot_array(other_details[6], 10),
-        _get_one_hot_array(other_details[6], 10),
-        _get_one_hot_array(other_details[6], 10),
-        [0] * 2,
+        _get_one_hot_array(other_details[7], 7),
+        _get_one_hot_array(other_details[8], 10),
+        [0] * 5,
     ))
     matrix = np.vstack((_cards2array(list_cards), # 1 * 42
                         [attributes1], # 1 * 42

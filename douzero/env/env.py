@@ -117,7 +117,7 @@ class Env:
         winner = self._game_winner
         scores = self._game_scores
         if self.objective == 'adp':
-            return scores[self.training_mode] - scores["pk_dp"]
+            return (scores[self.training_mode] - scores["pk_dp"]) / 7
         else:
             return 1.0 if scores[self.training_mode] > scores["pk_dp"] else -1.0
 

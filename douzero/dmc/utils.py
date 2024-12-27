@@ -196,7 +196,6 @@ def act(i, device, free_queue, full_queue, model, buffers, flags): # MYWEN
                             done_buf[p].extend([False for _ in range(diff-1)])
                             done_buf[p].append(True)
                             episode_return = env_output['episode_return'] if p == flags.training_mode else -env_output['episode_return'] # MYWEN / 24
-                            episode_return /= 7
                             wp_return = 1. if episode_return > 0. else -1.
                             episode_return_buf[p].extend([0.0 for _ in range(diff-1)])
                             episode_return_buf[p].append(episode_return)
